@@ -40,7 +40,8 @@ function enter(){
  if(!loaded||started)return;
  resize();started=true;main.inert=false;main.removeAttribute('aria-hidden');main.classList.add('ready');loading.classList.add('done');
  loading.removeAttribute('tabindex');loading.setAttribute('aria-hidden','true');
- document.getElementById('presave').focus({preventScroll:true});resume();
+ document.getElementById('play-pause').disabled ? document.getElementById('presave').focus({preventScroll:true}) : document.getElementById('play-pause').focus({preventScroll:true});
+ startAudio();resume();
 }
 loading.addEventListener('click',enter);
 loading.addEventListener('keydown',event=>{
@@ -54,3 +55,38 @@ Promise.all([Promise.all(assets),new Promise(resolve=>setTimeout(resolve,3000))]
 document.getElementById('presave').addEventListener('click',()=>{
  if(PRESAVE_URL){window.location.assign(PRESAVE_URL);}else{document.getElementById('notice').hidden=false;}
 });
+
+// Add songs in order, using local MP3 paths or direct audio URLs.
+const TRACKS=[{title:'A medio azular',src:''}];
+const audio=document.getElementById('audio');
+const previous=document.getElementById('previous');
+const next=document.getElementById('next');
+const playPause=document.getElementById('play-pause');
+let trackIndex=0,pendingPaused=false;
+function syncPlayer(){
+ previous.disabled=trackIndex===0;next.disabled=trackIndex===TRACKS.length-1;
+ const available=Boolean(TRACKS[trackIndex].src);
+ playPause.disabled=false;
+ const paused=available?audio.paused:pendingPaused;
+ playPause.setAttribute('aria-label',paused?'Reproducir':'Pausar');
+ playPause.title=available?playPause.getAttribute('aria-label'):'Audio todavía no disponible';
+ document.getElementById('pause-icon').hidden=paused;
+ document.getElementById('play-icon').hidden=!paused;
+}
+function startAudio(){if(TRACKS[trackIndex].src)audio.play().catch(syncPlayer);}
+function selectTrack(index){
+ if(index<0||index>=TRACKS.length)return;
+ audio.pause();trackIndex=index;
+ document.querySelector('h1').textContent='"'+TRACKS[index].title+'"';
+ if(TRACKS[index].src){audio.src=TRACKS[index].src;}else{audio.removeAttribute('src');}
+ audio.load();syncPlayer();if(started)startAudio();
+}
+previous.addEventListener('click',()=>selectTrack(trackIndex-1));
+next.addEventListener('click',()=>selectTrack(trackIndex+1));
+playPause.addEventListener('click',()=>{
+ if(!TRACKS[trackIndex].src){pendingPaused=!pendingPaused;syncPlayer();return;}
+ if(audio.paused)startAudio();else audio.pause();
+});
+for(const event of ['play','pause','ended','error'])audio.addEventListener(event,syncPlayer);
+audio.addEventListener('ended',()=>{if(trackIndex<TRACKS.length-1)selectTrack(trackIndex+1);});
+selectTrack(0);

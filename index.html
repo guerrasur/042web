@@ -17,7 +17,13 @@
 <img class="logo" src="logo-042.png" alt="042" fetchpriority="high">
 </div>
 <main id="main" inert aria-hidden="true">
-<header><h1>"A medio azular"</h1><p>Lucio 042</p></header>
+<header><h1>"A medio azular"</h1><p>Lucio 042</p>
+<div class="player-controls" role="group" aria-label="Controles de reproducción">
+<button id="previous" class="player-button" type="button" aria-label="Canción anterior" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h3v14H5zm14 0v14L9 12z"/></svg></button>
+<button id="play-pause" class="player-button" type="button" aria-label="Pausar" title="Audio todavía no disponible"><svg id="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg><svg id="play-icon" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 4v16l14-8z"/></svg></button>
+<button id="next" class="player-button" type="button" aria-label="Próxima canción" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h3v14h-3zM5 5v14l10-7z"/></svg></button>
+</div></header>
+<audio id="audio" preload="metadata"></audio>
 <div class="arena" id="arena"><img id="group" src="Grupo%204.png" alt="" draggable="false"></div>
 <footer><button id="presave" type="button"><img src="sun.svg" alt="" aria-hidden="true"><span>Pre-guardá "Meditación Guiada Para Perros"</span></button><p id="notice" role="status" hidden>El preguardado estará disponible próximamente.</p></footer>
 </main>
