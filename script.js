@@ -182,25 +182,24 @@ for(const event of ['play','pause','ended','error'])audio.addEventListener(event
 audio.addEventListener('ended',()=>{if(trackIndex<TRACKS.length-1)selectTrack(trackIndex+1);});
 selectTrack(0);
 
-// Keep the entrance still when cached audio is ready before loading becomes visible.
-// Read the media's actual readiness on every visit; a past visit alone is no guarantee.
-let entranceAssetsReady=false;
+// Every visit includes three seconds of simulated loading, even with cached assets.
+// The hint countdown starts only when both simulated and actual loading finish.
+let entranceAssetsReady=false,entranceMinimumElapsed=false;
 function syncEntrance(){
  if(started)return;
  const audioReady=!TRACKS[0].src||audio.readyState>=HTMLMediaElement.HAVE_FUTURE_DATA||Boolean(audio.error);
  const wasLoaded=loaded;
- loaded=entranceAssetsReady&&audioReady;
+ loaded=entranceMinimumElapsed&&entranceAssetsReady&&audioReady;
  if(loaded!==wasLoaded)resetEntranceHint();
- loading.classList.toggle('is-loading',!loaded&&entranceLoadingVisible);
+ loading.classList.toggle('is-loading',!loaded);
  loading.style.cursor=loaded?'pointer':'default';
  loading.setAttribute('role',loaded?'button':'status');
  loading.setAttribute('aria-label',loaded?'Entrar':'Cargando');
  if(loaded)loading.tabIndex=0;else loading.removeAttribute('tabindex');
 }
-let entranceLoadingVisible=false;
 for(const event of ['loadeddata','canplay','canplaythrough','progress','waiting','stalled','error','emptied'])audio.addEventListener(event,syncEntrance);
 Promise.all(assets).then(()=>{entranceAssetsReady=true;syncEntrance();});
-setTimeout(()=>{entranceLoadingVisible=true;syncEntrance();},150);
+setTimeout(()=>{entranceMinimumElapsed=true;syncEntrance();},3000);
 syncEntrance();
 
 // Replaced with the commit SHA by the Pages build, for every deployment.
