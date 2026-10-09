@@ -70,8 +70,8 @@ function syncPlayer(){
  const paused=available?audio.paused:pendingPaused;
  playPause.setAttribute('aria-label',paused?'Reproducir':'Pausar');
  playPause.title=available?playPause.getAttribute('aria-label'):'Audio todavía no disponible';
- document.getElementById('pause-icon').hidden=paused;
- document.getElementById('play-icon').hidden=!paused;
+ document.getElementById('pause-icon').toggleAttribute('hidden',paused);
+ document.getElementById('play-icon').toggleAttribute('hidden',!paused);
 }
 function startAudio(){if(TRACKS[trackIndex].src)audio.play().catch(syncPlayer);}
 function selectTrack(index){
