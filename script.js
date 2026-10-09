@@ -5,12 +5,13 @@ const loading = document.getElementById('loading');
 const main = document.getElementById('main');
 const arena = document.getElementById('arena');
 const group = document.getElementById('group');
+const groupImage = document.getElementById('group-image');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false,loaded=false;
 let hue=0;
 function changeColor(){
  hue=(hue+70+Math.random()*140)%360;
- group.style.filter=`sepia(1) saturate(8) hue-rotate(${hue}deg) brightness(.95)`;
+ groupImage.style.filter=`sepia(1) saturate(8) hue-rotate(${hue}deg) brightness(.95)`;
 }
 function paint(){group.style.transform=`translate3d(${x}px,${y}px,0)`;}
 function resize(){
@@ -32,9 +33,54 @@ function animate(now){
 }
 function resume(){cancelAnimationFrame(frame);last=0;if(started&&!document.hidden&&!reducedMotion.matches)frame=requestAnimationFrame(animate);}
 new ResizeObserver(resize).observe(arena);
-group.addEventListener('load',resize);
+groupImage.addEventListener('load',resize);
 document.addEventListener('visibilitychange',resume);
 reducedMotion.addEventListener('change',()=>{resize();resume();});
+// The moving button remains available after the image bursts, for the fifth tap.
+let inflation=0,burst=false;
+let deformation;
+const fragments=new Set();
+function clearFragments(){for(const fragment of fragments)fragment.remove();fragments.clear();}
+function inflate(){
+ if(!started)return;
+ if(burst){
+  burst=false;inflation=0;clearFragments();
+  groupImage.style.visibility='';
+ }else if(inflation===3){
+  burst=true;
+  deformation?.cancel();
+  groupImage.style.visibility='hidden';
+  group.setAttribute('aria-label','Volver a mostrar figura');
+  if(!reducedMotion.matches){
+   const width=group.clientWidth,height=group.clientHeight;
+   for(let row=0;row<4;row++)for(let col=0;col<4;col++){
+    const fragment=document.createElement('span');
+    fragment.className='group-fragment';
+    fragment.style.cssText=`left:${x+col*width/4}px;top:${y+row*height/4}px;width:${width/4+1}px;height:${height/4+1}px;background-image:url("${groupImage.src}");background-size:${width}px ${height}px;background-position:${-col*width/4}px ${-row*height/4}px;filter:${groupImage.style.filter}`;
+    arena.append(fragment);fragments.add(fragment);
+    const dx=(col-1.5)*55,dy=(row-1.5)*55;
+    const animation=fragment.animate([
+     {transform:'translate(0,0) scale(1)',opacity:1},
+     {transform:`translate(${dx}px,${dy}px) rotate(${(col-row)*30}deg) scale(.25)`,opacity:0}
+    ],{duration:650,easing:'cubic-bezier(.16,.7,.3,1)',fill:'forwards'});
+    animation.onfinish=()=>{fragment.remove();fragments.delete(fragment);};
+   }
+  }
+  return;
+ }else inflation++;
+ deformation?.cancel();
+ // Change the physical footprint too, keeping the inflated image inside the arena.
+ group.style.setProperty('--inflation',1+inflation*.2);
+ resize();
+ group.setAttribute('aria-label',inflation===3?'Explotar figura':'Inflar figura');
+ if(!reducedMotion.matches)deformation=groupImage.animate([
+  {transform:'scale(.88,1.12)'},
+  {transform:'scale(1.16,.86)',offset:.35},
+  {transform:'scale(.96,1.05)',offset:.7},
+  {transform:'scale(1,1)'}
+ ],{duration:480,easing:'ease-out'});
+}
+group.addEventListener('click',inflate);
 const assets=[...document.images].map(img=>img.decode().catch(()=>{}));
 function enter(){
  if(!loaded||started)return;
