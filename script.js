@@ -57,7 +57,7 @@ document.getElementById('presave').addEventListener('click',()=>{
 });
 
 // Add songs in order, using local MP3 paths or direct audio URLs.
-const TRACKS=[{title:'A medio azular',src:''}];
+const TRACKS=[{title:'A medio azular',album:'Meditación Guiada Para Perros / EP (2026)',src:''}];
 const audio=document.getElementById('audio');
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');
@@ -78,6 +78,7 @@ function selectTrack(index){
  if(index<0||index>=TRACKS.length)return;
  audio.pause();trackIndex=index;
  document.querySelector('h1').textContent='"'+TRACKS[index].title+'"';
+ document.getElementById('album').textContent=TRACKS[index].album||'';
  if(TRACKS[index].src){audio.src=TRACKS[index].src;}else{audio.removeAttribute('src');}
  audio.load();syncPlayer();if(started)startAudio();
 }
