@@ -25,6 +25,7 @@ jobs:
         run: |
           mkdir dist
           cp index.html style.css script.js logo-042.png 'Grupo 4.png' sun.svg dist/
+          cp -R fonts dist/
           touch dist/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
