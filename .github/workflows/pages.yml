@@ -26,6 +26,9 @@ jobs:
           mkdir dist
           cp index.html style.css script.js logo-042.png 'Grupo 4.png' sun.svg dist/
           cp -R fonts audio dist/
+          sed -i "s/__BUILD_VERSION__/${{ github.sha }}/g" dist/script.js
+          sed -i "s/?v=[0-9]*/?v=${{ github.sha }}/g" dist/index.html
+          printf '{"version":"%s"}\n' '${{ github.sha }}' > dist/version.json
           touch dist/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

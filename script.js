@@ -202,3 +202,33 @@ for(const event of ['loadeddata','canplay','canplaythrough','progress','waiting'
 Promise.all(assets).then(()=>{entranceAssetsReady=true;syncEntrance();});
 setTimeout(()=>{entranceLoadingVisible=true;syncEntrance();},150);
 syncEntrance();
+
+// Replaced with the commit SHA by the Pages build, for every deployment.
+const BUILD_VERSION='__BUILD_VERSION__';
+let checkingUpdate=false;
+async function checkForUpdate(){
+ if(checkingUpdate||document.hidden||BUILD_VERSION.startsWith('__'))return;
+ checkingUpdate=true;
+ try{
+  const versionURL=new URL('version.json',location.href);
+  versionURL.searchParams.set('t',Date.now());
+  const response=await fetch(versionURL,{cache:'no-store'});
+  if(!response.ok)return;
+  const {version}=await response.json();
+  if(typeof version!=='string'||!/^[a-f0-9]{40}$/.test(version)||version===BUILD_VERSION)return;
+  // Avoid reload loops if the CDN temporarily serves an older HTML document.
+  const previousReload=JSON.parse(sessionStorage.getItem('042-update')||'null');
+  if(previousReload?.version===version&&Date.now()-previousReload.time<120000)return;
+  sessionStorage.setItem('042-update',JSON.stringify({version,time:Date.now()}));
+  const destination=new URL(location.href);
+  destination.searchParams.set('v',version);
+  location.replace(destination.href);
+ }catch{
+  // Offline visits continue normally; the next check retries automatically.
+ }finally{checkingUpdate=false;}
+}
+checkForUpdate();
+setInterval(checkForUpdate,30000);
+window.addEventListener('pageshow',checkForUpdate);
+window.addEventListener('online',checkForUpdate);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForUpdate();});
