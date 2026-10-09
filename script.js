@@ -6,7 +6,12 @@ const main = document.getElementById('main');
 const arena = document.getElementById('arena');
 const group = document.getElementById('group');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-let x=0,y=0,vx=46,vy=37,maxX=0,maxY=0,last=0,frame=0,started=false;
+let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false;
+let hue=0;
+function changeColor(){
+ hue=(hue+70+Math.random()*140)%360;
+ group.style.filter=`sepia(1) saturate(8) hue-rotate(${hue}deg) brightness(.95)`;
+}
 function paint(){group.style.transform=`translate3d(${x}px,${y}px,0)`;}
 function resize(){
  maxX=Math.max(0,arena.clientWidth-group.clientWidth);
@@ -17,7 +22,7 @@ function resize(){
 function bounce(position,velocity,limit,delta){
  if(limit<=0)return [0,velocity];
  let next=position+velocity*delta;
- while(next<0||next>limit){if(next<0){next=-next;velocity=Math.abs(velocity);}if(next>limit){next=2*limit-next;velocity=-Math.abs(velocity);}}
+ while(next<0||next>limit){if(next<0){next=-next;velocity=Math.abs(velocity);changeColor();}if(next>limit){next=2*limit-next;velocity=-Math.abs(velocity);changeColor();}}
  return [next,velocity];
 }
 function animate(now){
