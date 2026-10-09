@@ -8,6 +8,7 @@ const group = document.getElementById('group');
 const groupImage = document.getElementById('group-image');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false,loaded=false;
+const INITIAL_VX=92,INITIAL_VY=74;
 let hue=0;
 function changeColor(){
  hue=(hue+70+Math.random()*140)%360;
@@ -80,6 +81,7 @@ function inflate(){
  if(!started)return;
  if(burst){
   burst=false;inflation=0;clearFragments();
+  vx=Math.sign(vx)*INITIAL_VX;vy=Math.sign(vy)*INITIAL_VY;
   groupImage.style.visibility='';
  }else if(inflation===3){
   burst=true;
@@ -102,7 +104,7 @@ function inflate(){
    }
   }
   return;
- }else inflation++;
+ }else{inflation++;vx*=2;vy*=2;}
  deformation?.cancel();
  expandCenter(inflation);
  group.setAttribute('aria-label',inflation===3?'Explotar figura':'Inflar figura');
@@ -113,7 +115,8 @@ function inflate(){
   {transform:'translateX(0)'}
  ],{duration:480,easing:'ease-out'});
 }
-group.addEventListener('click',inflate);
+group.addEventListener('click',event=>{event.stopPropagation();inflate();});
+arena.addEventListener('click',()=>{if(burst)inflate();});
 const assets=[...document.images].map(img=>img.decode().catch(()=>{}));
 function enter(){
  if(!loaded||started)return;
