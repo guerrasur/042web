@@ -39,6 +39,41 @@ reducedMotion.addEventListener('change',()=>{resize();resume();});
 // The moving button remains available after the image bursts, for the fifth tap.
 let inflation=0,burst=false;
 let deformation;
+const originalGroupSource=groupImage.src;
+let groupPixels;
+function expandCenter(level){
+ if(level===0){groupImage.src=originalGroupSource;return;}
+ const canvas=document.createElement('canvas');
+ if(!groupPixels){
+  canvas.width=groupImage.naturalWidth;canvas.height=groupImage.naturalHeight;
+  const context=canvas.getContext('2d');
+  context.drawImage(groupImage,0,0);
+  groupPixels=context.getImageData(0,0,canvas.width,canvas.height);
+ }
+ const {width,height,data}=groupPixels;
+ canvas.width=width;canvas.height=height;
+ const context=canvas.getContext('2d');
+ const output=context.createImageData(width,height);
+ // Inverse radial mapping: expand the center and compress the outer ring.
+ // The ellipse boundary stays fixed, so every stage has the same dimensions.
+ const power=1+level*.45;
+ for(let py=0;py<height;py++)for(let px=0;px<width;px++){
+  const nx=(px-(width-1)/2)/(width/2),ny=(py-(height-1)/2)/(height/2);
+  const radius=Math.hypot(nx,ny);
+  const factor=radius>0&&radius<1?Math.pow(radius,power-1):1;
+  const sx=Math.max(0,Math.min(width-1,(width-1)/2+nx*factor*width/2));
+  const sy=Math.max(0,Math.min(height-1,(height-1)/2+ny*factor*height/2));
+  const ix=Math.floor(sx),iy=Math.floor(sy),fx=sx-ix,fy=sy-iy;
+  const a=(iy*width+ix)*4,b=(iy*width+Math.min(ix+1,width-1))*4;
+  const c=(Math.min(iy+1,height-1)*width+ix)*4,d=(Math.min(iy+1,height-1)*width+Math.min(ix+1,width-1))*4;
+  const dest=(py*width+px)*4;
+  for(let channel=0;channel<4;channel++)output.data[dest+channel]=
+   (data[a+channel]*(1-fx)+data[b+channel]*fx)*(1-fy)+
+   (data[c+channel]*(1-fx)+data[d+channel]*fx)*fy;
+ }
+ context.putImageData(output,0,0);
+ groupImage.src=canvas.toDataURL('image/png');
+}
 const fragments=new Set();
 function clearFragments(){for(const fragment of fragments)fragment.remove();fragments.clear();}
 function inflate(){
@@ -69,15 +104,13 @@ function inflate(){
   return;
  }else inflation++;
  deformation?.cancel();
- // Change the physical footprint too, keeping the inflated image inside the arena.
- group.style.setProperty('--inflation',1+inflation*.2);
- resize();
+ expandCenter(inflation);
  group.setAttribute('aria-label',inflation===3?'Explotar figura':'Inflar figura');
  if(!reducedMotion.matches)deformation=groupImage.animate([
-  {transform:'scale(.88,1.12)'},
-  {transform:'scale(1.16,.86)',offset:.35},
-  {transform:'scale(.96,1.05)',offset:.7},
-  {transform:'scale(1,1)'}
+  {transform:'translateX(-2px)'},
+  {transform:'translateX(2px)',offset:.35},
+  {transform:'translateX(-1px)',offset:.7},
+  {transform:'translateX(0)'}
  ],{duration:480,easing:'ease-out'});
 }
 group.addEventListener('click',inflate);
