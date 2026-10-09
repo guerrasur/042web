@@ -3,6 +3,18 @@
 const PRESAVE_URL = '';
 const loading = document.getElementById('loading');
 const main = document.getElementById('main');
+const entranceHint=document.getElementById('entrance-hint');
+let entranceHintTimer=null;
+function resetEntranceHint(){
+ clearTimeout(entranceHintTimer);entranceHintTimer=null;
+ entranceHint.classList.remove('visible');
+ if(loaded&&!started)entranceHintTimer=setTimeout(()=>{
+  entranceHintTimer=null;
+  if(loaded&&!started)entranceHint.classList.add('visible');
+ },4000);
+}
+loading.addEventListener('pointerdown',resetEntranceHint);
+loading.addEventListener('keydown',resetEntranceHint);
 const arena = document.getElementById('arena');
 const group = document.getElementById('group');
 const groupImage = document.getElementById('group-image');
@@ -120,6 +132,8 @@ arena.addEventListener('click',()=>{if(burst)inflate();});
 const assets=[...document.images].map(img=>img.decode().catch(()=>{}));
 function enter(){
  if(!loaded||started)return;
+ clearTimeout(entranceHintTimer);entranceHintTimer=null;
+ entranceHint.classList.remove('visible');
  resize();started=true;main.inert=false;main.removeAttribute('aria-hidden');main.classList.add('ready');loading.classList.add('done');
  loading.removeAttribute('tabindex');loading.setAttribute('aria-hidden','true');
  document.getElementById('play-pause').disabled ? document.getElementById('presave').focus({preventScroll:true}) : document.getElementById('play-pause').focus({preventScroll:true});
@@ -174,7 +188,9 @@ let entranceAssetsReady=false;
 function syncEntrance(){
  if(started)return;
  const audioReady=!TRACKS[0].src||audio.readyState>=HTMLMediaElement.HAVE_FUTURE_DATA||Boolean(audio.error);
+ const wasLoaded=loaded;
  loaded=entranceAssetsReady&&audioReady;
+ if(loaded!==wasLoaded)resetEntranceHint();
  loading.classList.toggle('is-loading',!loaded&&entranceLoadingVisible);
  loading.style.cursor=loaded?'pointer':'default';
  loading.setAttribute('role',loaded?'button':'status');

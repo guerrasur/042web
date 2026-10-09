@@ -9,3 +9,5 @@ header .album{font-size:clamp(12px,3.2vw,15px);font-weight:300;line-height:1.4;o
 .album span{display:block}
 
 #group{width:clamp(78px,23vw,125px);max-width:100%;max-height:100%;aspect-ratio:427 / 330}#group-image{display:block;width:100%;height:100%;object-fit:contain;user-select:none;pointer-events:none;will-change:transform}#group:focus-visible{outline:2px dashed #fff;outline-offset:4px;border-radius:50%}.group-fragment{position:absolute;pointer-events:none;background-repeat:no-repeat;will-change:transform,opacity}
+
+.entrance-content{position:relative;line-height:0}.entrance-hint{position:absolute;top:100%;left:50%;transform:translateX(-50%);width:max-content;max-width:90vw;margin:24px 0 0;font-size:clamp(17px,4.5vw,22px);font-weight:300;line-height:1.4;text-align:center;opacity:0;transition:opacity 3s ease;pointer-events:none}.entrance-hint.visible{opacity:.4}@media(prefers-reduced-motion:reduce){.entrance-hint{transition:none}}
