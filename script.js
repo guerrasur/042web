@@ -6,7 +6,7 @@ const main = document.getElementById('main');
 const arena = document.getElementById('arena');
 const group = document.getElementById('group');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false;
+let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false,loaded=false;
 let hue=0;
 function changeColor(){
  hue=(hue+70+Math.random()*140)%360;
@@ -36,8 +36,20 @@ group.addEventListener('load',resize);
 document.addEventListener('visibilitychange',resume);
 reducedMotion.addEventListener('change',()=>{resize();resume();});
 const assets=[...document.images].map(img=>img.decode().catch(()=>{}));
+function enter(){
+ if(!loaded||started)return;
+ resize();started=true;main.inert=false;main.removeAttribute('aria-hidden');main.classList.add('ready');loading.classList.add('done');
+ loading.removeAttribute('tabindex');loading.setAttribute('aria-hidden','true');
+ document.getElementById('presave').focus({preventScroll:true});resume();
+}
+loading.addEventListener('click',enter);
+loading.addEventListener('keydown',event=>{
+ if(loaded&&(event.key==='Enter'||event.key===' ')){event.preventDefault();enter();}
+});
 Promise.all([Promise.all(assets),new Promise(resolve=>setTimeout(resolve,3000))]).then(()=>{
- resize();started=true;main.inert=false;main.removeAttribute('aria-hidden');main.classList.add('ready');loading.classList.add('done');resume();
+ loaded=true;
+ const logo=loading.querySelector('.logo');logo.style.animation='none';logo.style.opacity='1';
+ loading.style.cursor='pointer';loading.setAttribute('role','button');loading.setAttribute('aria-label','Entrar');loading.tabIndex=0;
 });
 document.getElementById('presave').addEventListener('click',()=>{
  if(PRESAVE_URL){window.location.assign(PRESAVE_URL);}else{document.getElementById('notice').hidden=false;}
