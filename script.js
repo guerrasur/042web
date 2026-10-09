@@ -47,17 +47,12 @@ loading.addEventListener('click',enter);
 loading.addEventListener('keydown',event=>{
  if(loaded&&(event.key==='Enter'||event.key===' ')){event.preventDefault();enter();}
 });
-Promise.all([Promise.all(assets),new Promise(resolve=>setTimeout(resolve,3000))]).then(()=>{
- loaded=true;
- const logo=loading.querySelector('.logo');logo.style.animation='none';logo.style.opacity='1';
- loading.style.cursor='pointer';loading.setAttribute('role','button');loading.setAttribute('aria-label','Entrar');loading.tabIndex=0;
-});
 document.getElementById('presave').addEventListener('click',()=>{
  if(PRESAVE_URL){window.location.assign(PRESAVE_URL);}else{document.getElementById('notice').hidden=false;}
 });
 
 // Add songs in order, using local MP3 paths or direct audio URLs.
-const TRACKS=[{title:'A medio azular',album:'Meditación Guiada Para Perros / EP (2026)',src:'audio/a-medio-azular.mp3'}];
+const TRACKS=[{title:'A medio azular',album:'Meditación Guiada Para Perros',edition:'EP (2026)',src:'audio/a-medio-azular.mp3'}];
 const audio=document.getElementById('audio');
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');
@@ -78,7 +73,8 @@ function selectTrack(index){
  if(index<0||index>=TRACKS.length)return;
  audio.pause();trackIndex=index;
  document.querySelector('h1').textContent='"'+TRACKS[index].title+'"';
- document.getElementById('album').textContent=TRACKS[index].album||'';
+ document.getElementById('album-title').textContent=TRACKS[index].album||'';
+ document.getElementById('album-edition').textContent=TRACKS[index].edition||'';
  if(TRACKS[index].src){audio.src=TRACKS[index].src;}else{audio.removeAttribute('src');}
  audio.load();syncPlayer();if(started)startAudio();
 }
@@ -91,3 +87,22 @@ playPause.addEventListener('click',()=>{
 for(const event of ['play','pause','ended','error'])audio.addEventListener(event,syncPlayer);
 audio.addEventListener('ended',()=>{if(trackIndex<TRACKS.length-1)selectTrack(trackIndex+1);});
 selectTrack(0);
+
+// Keep the entrance still when cached audio is ready before loading becomes visible.
+// Read the media's actual readiness on every visit; a past visit alone is no guarantee.
+let entranceAssetsReady=false;
+function syncEntrance(){
+ if(started)return;
+ const audioReady=!TRACKS[0].src||audio.readyState>=HTMLMediaElement.HAVE_FUTURE_DATA||Boolean(audio.error);
+ loaded=entranceAssetsReady&&audioReady;
+ loading.classList.toggle('is-loading',!loaded&&entranceLoadingVisible);
+ loading.style.cursor=loaded?'pointer':'default';
+ loading.setAttribute('role',loaded?'button':'status');
+ loading.setAttribute('aria-label',loaded?'Entrar':'Cargando');
+ if(loaded)loading.tabIndex=0;else loading.removeAttribute('tabindex');
+}
+let entranceLoadingVisible=false;
+for(const event of ['loadeddata','canplay','canplaythrough','progress','waiting','stalled','error','emptied'])audio.addEventListener(event,syncEntrance);
+Promise.all(assets).then(()=>{entranceAssetsReady=true;syncEntrance();});
+setTimeout(()=>{entranceLoadingVisible=true;syncEntrance();},150);
+syncEntrance();
