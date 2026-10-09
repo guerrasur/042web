@@ -73,8 +73,6 @@ function selectTrack(index){
  if(index<0||index>=TRACKS.length)return;
  audio.pause();trackIndex=index;
  document.querySelector('h1').textContent='"'+TRACKS[index].title+'"';
- document.getElementById('album-title').textContent=TRACKS[index].album||'';
- document.getElementById('album-edition').textContent=TRACKS[index].edition||'';
  if(TRACKS[index].src){audio.src=TRACKS[index].src;}else{audio.removeAttribute('src');}
  audio.load();syncPlayer();if(started)startAudio();
 }
