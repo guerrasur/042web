@@ -148,7 +148,10 @@ document.getElementById('presave').addEventListener('click',()=>{
 });
 
 // Add songs in order, using local MP3 paths or direct audio URLs.
-const TRACKS=[{title:'A medio azular',album:'Meditación Guiada Para Perros',edition:'EP (2026)',src:'audio/a-medio-azular.mp3'}];
+const TRACKS=[
+ {title:'A medio azular',album:'Meditación Guiada Para Perros',edition:'EP (2026)',src:'audio/a-medio-azular.mp3'},
+ {title:'200 pesos fuertes (instrumental)',src:'audio/200-pesos-fuertes-instrumental.mp3'}
+];
 const audio=document.getElementById('audio');
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');
