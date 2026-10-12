@@ -24,6 +24,7 @@ const INITIAL_VX=92,INITIAL_VY=74;
 let hue=0;
 let grab=null,suppressClickUntil=0;
 const HOLD_DELAY=180;
+let throwSpeed=0;
 function finishGrab(event){
  if(!grab||event.pointerId!==grab.id)return;
  const held=grab;
@@ -31,10 +32,12 @@ function finishGrab(event){
  grab=null;
  if(held.dragging){
   suppressClickUntil=performance.now()+500;
-  // Keep each inflation stage's speed, but carry the release direction forward.
+  // Launch in the gesture direction, then ease back to the current stage's speed.
   const length=Math.hypot(held.velocityX,held.velocityY);
   if(length>30&&performance.now()-held.previousTime<120&&event.type!=='pointercancel'){
-   const speed=Math.hypot(vx,vy);
+   const baseSpeed=Math.hypot(INITIAL_VX,INITIAL_VY)*2**inflation;
+   throwSpeed=baseSpeed;
+   const speed=Math.max(baseSpeed,Math.min(length,1800));
    vx=held.velocityX/length*speed;vy=held.velocityY/length*speed;
   }
  }
@@ -60,8 +63,9 @@ group.addEventListener('pointermove',event=>{
  if(!grab||event.pointerId!==grab.id)return;
  const rect=arena.getBoundingClientRect(),now=performance.now();
  const elapsed=Math.max((now-grab.previousTime)/1000,.008);
- grab.velocityX=(event.clientX-grab.previousX)/elapsed;
- grab.velocityY=(event.clientY-grab.previousY)/elapsed;
+ const blend=1-Math.exp(-elapsed*35);
+ grab.velocityX+=((event.clientX-grab.previousX)/elapsed-grab.velocityX)*blend;
+ grab.velocityY+=((event.clientY-grab.previousY)/elapsed-grab.velocityY)*blend;
  grab.previousX=event.clientX;grab.previousY=event.clientY;grab.previousTime=now;
  grab.targetX=Math.max(0,Math.min(maxX,event.clientX-rect.left-grab.offsetX));
  grab.targetY=Math.max(0,Math.min(maxY,event.clientY-rect.top-grab.offsetY));
@@ -92,6 +96,12 @@ function animate(now){
   const follow=reducedMotion.matches?1:1-Math.exp(-28*dt);
   x+=(grab.targetX-x)*follow;y+=(grab.targetY-y)*follow;
  }else if(!grab){
+  if(throwSpeed){
+   const speed=Math.hypot(vx,vy);
+   const eased=throwSpeed+(speed-throwSpeed)*Math.exp(-3.5*dt);
+   vx*=eased/speed;vy*=eased/speed;
+   if(Math.abs(eased-throwSpeed)<.5)throwSpeed=0;
+  }
   [x,vx]=bounce(x,vx,maxX,dt);[y,vy]=bounce(y,vy,maxY,dt);
  }
  paint();
@@ -147,6 +157,7 @@ const fragments=new Set();
 function clearFragments(){for(const fragment of fragments)fragment.remove();fragments.clear();}
 function inflate(){
  if(!started)return;
+ throwSpeed=0;
  if(burst){
   burst=false;inflation=0;clearFragments();
   vx=Math.sign(vx)*INITIAL_VX;vy=Math.sign(vy)*INITIAL_VY;
