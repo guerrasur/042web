@@ -15,255 +15,210 @@ function resetEntranceHint(){
 }
 loading.addEventListener('pointerdown',resetEntranceHint);
 loading.addEventListener('keydown',resetEntranceHint);
-const arena = document.getElementById('arena');
-const group = document.getElementById('group');
-const groupImage = document.getElementById('group-image');
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false,loaded=false;
-const INITIAL_VX=92,INITIAL_VY=74;
-let hue=0;
-let grab=null,suppressClickUntil=0;
-const HOLD_DELAY=180;
-let throwSpeed=0;
-let autoMotion=null,motionOrigin=null;
-const bounceTimers=[];
-function reflected(position,velocity,limit,distance){
- if(limit<=0)return [0,velocity];
- const phase=position+velocity*distance;
- const wrapped=((phase%(2*limit))+2*limit)%(2*limit);
- return [wrapped<=limit?wrapped:2*limit-wrapped,velocity*(wrapped<limit?1:-1)];
+const arena=document.getElementById('arena');
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
+let plans=null,planStates=null;
+const colorTimers=[];
+const group=document.getElementById('group');
+const second=group.cloneNode(true);
+second.id='group-two';second.querySelector('img').id='group-image-two';arena.append(second);
+const bodies=[group,second].map((element,index)=>({element,image:element.querySelector('img'),
+ x:0,y:0,vx:index?-92:92,vy:index?74:-74,targetSpeed:0,hue:index?190:0,
+ inflation:0,burst:false,grab:null,suppressUntil:0,fragments:new Set(),deformation:null}));
+function tint(body){body.hue=(body.hue+70+Math.random()*140)%360;body.image.style.filter=`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`;}
+bodies[1].image.style.filter='sepia(1) saturate(8) hue-rotate(190deg) brightness(.95)';
+function paint(){for(const b of bodies)b.element.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;}
+function snapshot(){return bodies.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,targetSpeed:b.targetSpeed,burst:b.burst,held:Boolean(b.grab)}));}
+function apply(states){states.forEach((s,i)=>{for(const key of ['x','y','vx','vy','targetSpeed'])bodies[i][key]=s[key];});}
+function wall(b){
+ let hit=false;
+ if(b.x<0){b.x=-b.x;b.vx=Math.abs(b.vx);hit=true;}
+ if(b.x>maxX){b.x=2*maxX-b.x;b.vx=-Math.abs(b.vx);hit=true;}
+ if(b.y<0){b.y=-b.y;b.vy=Math.abs(b.vy);hit=true;}
+ if(b.y>maxY){b.y=2*maxY-b.y;b.vy=-Math.abs(b.vy);hit=true;}
+ b.x=Math.max(0,Math.min(maxX,b.x));b.y=Math.max(0,Math.min(maxY,b.y));
+ return hit;
 }
-function motionAt(seconds){
- const origin=motionOrigin;
- const ratio=origin.targetSpeed?origin.targetSpeed/origin.speed:1;
- const distance=ratio*seconds+(1-ratio)*(1-Math.exp(-3.5*seconds))/3.5;
- const scale=ratio+(1-ratio)*Math.exp(-3.5*seconds);
- const horizontal=reflected(origin.x,origin.vx,maxX,distance);
- const vertical=reflected(origin.y,origin.vy,maxY,distance);
- return {x:horizontal[0],y:vertical[0],vx:horizontal[1]*scale,vy:vertical[1]*scale};
-}
-function stopAutoMotion(){
- if(autoMotion){
-  const state=motionAt(Math.min(Number(autoMotion.currentTime||0)/1000,8));
-  x=state.x;y=state.y;vx=state.vx;vy=state.vy;
-  autoMotion.cancel();autoMotion=null;motionOrigin=null;paint();
+function physics(states,dt){
+ const hits=new Set();
+ states.forEach((b,i)=>{
+  if(b.held)return;
+  if(b.targetSpeed){
+   const speed=Math.hypot(b.vx,b.vy);
+   if(speed){const eased=b.targetSpeed+(speed-b.targetSpeed)*Math.exp(-3.5*dt);b.vx*=eased/speed;b.vy*=eased/speed;}
+  }
+  b.x+=b.vx*dt;b.y+=b.vy*dt;
+  if(wall(b))hits.add(i);
+ });
+ const [a,b]=states;
+ if(!a.burst&&!b.burst&&!(a.held&&b.held)){
+  const dx=b.x-a.x,dy=b.y-a.y,distance=Math.hypot(dx,dy),diameter=radius*2;
+  if(distance<diameter){
+   const nx=distance>.001?dx/distance:1,ny=distance>.001?dy/distance:0;
+   const overlap=diameter-distance+.05;
+   const shareA=a.held?0:b.held?1:.5,shareB=b.held?0:a.held?1:.5;
+   a.x-=nx*overlap*shareA;a.y-=ny*overlap*shareA;
+   b.x+=nx*overlap*shareB;b.y+=ny*overlap*shareB;
+   const relative=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+   if(relative<0){
+    const impulse=-relative*(a.held||b.held?1.85:1);
+    if(!a.held){a.vx-=impulse*nx;a.vy-=impulse*ny;}
+    if(!b.held){b.vx+=impulse*nx;b.vy+=impulse*ny;}
+    hits.add(0);hits.add(1);
+   }
+   for(const body of states)if(!body.held){
+    wall(body);
+    const speed=Math.hypot(body.vx,body.vy);
+    if(speed>1800){body.vx*=1800/speed;body.vy*=1800/speed;}
+   }
+  }
  }
- for(const timer of bounceTimers)clearTimeout(timer);
- bounceTimers.length=0;
+ return hits;
 }
-function startAutoMotion(){
- stopAutoMotion();
- motionOrigin={x,y,vx,vy,speed:Math.hypot(vx,vy),targetSpeed:throwSpeed};
- const keyframes=[];
- let directionX=Math.sign(vx),directionY=Math.sign(vy);
- // Browser interpolation runs on the compositor even if the main thread is busy.
+function stopPlans(){
+ if(plans){
+  const time=Math.min(Number(plans[0].currentTime||0)/1000,4);
+  const index=Math.min(480,Math.floor(time*120));
+  const states=planStates[index].map(s=>({...s}));
+  physics(states,Math.max(0,time-index/120));apply(states);
+  for(const animation of plans)animation.cancel();plans=null;planStates=null;paint();
+ }
+ for(const timer of colorTimers)clearTimeout(timer);colorTimers.length=0;
+}
+function playPlans(){
+ const states=snapshot(),frames=[[],[]];planStates=[states.map(s=>({...s}))];
  for(let i=0;i<=480;i++){
-  const state=motionAt(i/60);
-  keyframes.push({transform:`translate3d(${state.x}px,${state.y}px,0)`,offset:i/480});
-  if(Math.sign(state.vx)!==directionX||Math.sign(state.vy)!==directionY){
-   bounceTimers.push(setTimeout(changeColor,i/60*1000));
-   directionX=Math.sign(state.vx);directionY=Math.sign(state.vy);
+  if(i){
+   const hits=physics(states,1/120);
+   for(const index of hits)colorTimers.push(setTimeout(()=>tint(bodies[index]),i/120*1000));
+   planStates.push(states.map(s=>({...s})));
   }
+  states.forEach((s,index)=>frames[index].push({transform:`translate3d(${s.x}px,${s.y}px,0)`,offset:i/480}));
  }
- autoMotion=group.animate(keyframes,{duration:8000,easing:'linear',fill:'forwards'});
- autoMotion.onfinish=()=>{stopAutoMotion();resume();};
-}
-function beginDrag(){
- if(!grab||grab.dragging)return;
- clearTimeout(grab.timer);
- grab.dragging=true;group.classList.add('dragging');
- // One frame loop; direct manipulation stays active with reduced motion.
- cancelAnimationFrame(frame);last=0;frame=requestAnimationFrame(animate);
-}
-function finishGrab(event){
- if(!grab||event.pointerId!==grab.id)return;
- const held=grab;
- clearTimeout(held.timer);
- grab=null;
- if(held.dragging){
-  x=held.targetX;y=held.targetY;paint();
-  suppressClickUntil=performance.now()+500;
-  // Launch in the gesture direction, then ease back to the current stage's speed.
-  const length=Math.hypot(held.velocityX,held.velocityY);
-  if(length>30&&performance.now()-held.previousTime<120&&event.type!=='pointercancel'){
-   const baseSpeed=Math.hypot(INITIAL_VX,INITIAL_VY)*2**inflation;
-   throwSpeed=baseSpeed;
-   const speed=Math.max(baseSpeed,Math.min(length,1800));
-   vx=held.velocityX/length*speed;vy=held.velocityY/length*speed;
-  }
- }
- if(group.hasPointerCapture(event.pointerId))group.releasePointerCapture(event.pointerId);
- group.classList.remove('dragging');
- if(reducedMotion.matches){cancelAnimationFrame(frame);frame=0;}
- else resume();
-}
-group.addEventListener('pointerdown',event=>{
- if(!started||burst||grab||!event.isPrimary||event.button!==0)return;
- stopAutoMotion();
- const rect=arena.getBoundingClientRect();
- grab={id:event.pointerId,offsetX:event.clientX-rect.left-x,offsetY:event.clientY-rect.top-y,
-  targetX:x,targetY:y,arenaLeft:rect.left,arenaTop:rect.top,startX:event.clientX,startY:event.clientY,
-  velocityX:0,velocityY:0,previousX:event.clientX,previousY:event.clientY,
-  previousTime:performance.now(),dragging:false,timer:null};
- group.setPointerCapture(event.pointerId);
- grab.timer=setTimeout(beginDrag,HOLD_DELAY);
-});
-group.addEventListener('pointermove',event=>{
- if(!grab||event.pointerId!==grab.id)return;
- const now=performance.now();
- if(Math.hypot(event.clientX-grab.startX,event.clientY-grab.startY)>6)beginDrag();
- const elapsed=Math.max((now-grab.previousTime)/1000,.008);
- const blend=1-Math.exp(-elapsed*35);
- grab.velocityX+=((event.clientX-grab.previousX)/elapsed-grab.velocityX)*blend;
- grab.velocityY+=((event.clientY-grab.previousY)/elapsed-grab.velocityY)*blend;
- grab.previousX=event.clientX;grab.previousY=event.clientY;grab.previousTime=now;
- grab.targetX=Math.max(0,Math.min(maxX,event.clientX-grab.arenaLeft-grab.offsetX));
- grab.targetY=Math.max(0,Math.min(maxY,event.clientY-grab.arenaTop-grab.offsetY));
-});
-for(const event of ['pointerup','pointercancel','lostpointercapture'])group.addEventListener(event,finishGrab);
-group.addEventListener('contextmenu',event=>event.preventDefault());
-group.addEventListener('dragstart',event=>event.preventDefault());
-function changeColor(){
- hue=(hue+70+Math.random()*140)%360;
- groupImage.style.filter=`sepia(1) saturate(8) hue-rotate(${hue}deg) brightness(.95)`;
-}
-function paint(){group.style.transform=`translate3d(${x}px,${y}px,0)`;}
-function resize(){
- stopAutoMotion();
- if(grab){
-  const rect=arena.getBoundingClientRect();
-  grab.arenaLeft=rect.left;grab.arenaTop=rect.top;
- }
- maxX=Math.max(0,arena.clientWidth-group.clientWidth);
- maxY=Math.max(0,arena.clientHeight-group.clientHeight);
- if(!started||reducedMotion.matches){x=maxX/2;y=maxY/2;}else{x=Math.min(maxX,Math.max(0,x));y=Math.min(maxY,Math.max(0,y));}
- if(grab){grab.targetX=Math.min(maxX,grab.targetX);grab.targetY=Math.min(maxY,grab.targetY);}
- paint();
- if(started&&!grab)resume();
-}
-function bounce(position,velocity,limit,delta){
- if(limit<=0)return [0,velocity];
- let next=position+velocity*delta;
- while(next<0||next>limit){if(next<0){next=-next;velocity=Math.abs(velocity);changeColor();}if(next>limit){next=2*limit-next;velocity=-Math.abs(velocity);changeColor();}}
- return [next,velocity];
+ plans=bodies.map((b,i)=>b.element.animate(frames[i],{duration:4000,easing:'linear',fill:'forwards'}));
+ plans[0].onfinish=()=>{stopPlans();resume();};
 }
 function animate(now){
  const dt=last?Math.min((now-last)/1000,.05):0;last=now;
- if(grab?.dragging){
-  // Follow the latest pointer position exactly, without a trailing spring.
-  x=grab.targetX;y=grab.targetY;
- }else if(!grab){
-  if(throwSpeed){
-   const speed=Math.hypot(vx,vy);
-   const eased=throwSpeed+(speed-throwSpeed)*Math.exp(-3.5*dt);
-   vx*=eased/speed;vy*=eased/speed;
-   if(Math.abs(eased-throwSpeed)<.5)throwSpeed=0;
-  }
-  [x,vx]=bounce(x,vx,maxX,dt);[y,vy]=bounce(y,vy,maxY,dt);
+ const states=snapshot();
+ bodies.forEach((b,i)=>{if(b.grab){states[i].x=b.grab.targetX;states[i].y=b.grab.targetY;if(now-b.grab.time>120){states[i].vx=0;states[i].vy=0;}}});
+ if(!reducedMotion.matches){
+  const steps=Math.max(1,Math.ceil(dt*120));
+  for(let i=0;i<steps;i++)for(const index of physics(states,dt/steps))tint(bodies[index]);
  }
- paint();
- frame=requestAnimationFrame(animate);
+ apply(states);paint();frame=requestAnimationFrame(animate);
 }
 function resume(){
- cancelAnimationFrame(frame);frame=0;last=0;
- if(!started||document.hidden||reducedMotion.matches){stopAutoMotion();return;}
- if(grab){frame=requestAnimationFrame(animate);return;}
- startAutoMotion();
+ cancelAnimationFrame(frame);frame=0;last=0;stopPlans();
+ if(!started||document.hidden)return;
+ if(bodies.some(b=>b.grab)){frame=requestAnimationFrame(animate);return;}
+ if(!reducedMotion.matches)playPlans();
 }
-new ResizeObserver(resize).observe(arena);
-groupImage.addEventListener('load',resize);
-document.addEventListener('visibilitychange',()=>{
- if(document.hidden&&grab)finishGrab({pointerId:grab.id});
- resume();
-});
-reducedMotion.addEventListener('change',()=>{resize();resume();});
-// The moving button remains available after the image bursts, for the fifth tap.
-let inflation=0,burst=false;
-let deformation;
-const originalGroupSource=groupImage.src;
+function resize(){
+ stopPlans();
+ maxX=Math.max(0,arena.clientWidth-group.clientWidth);maxY=Math.max(0,arena.clientHeight-group.clientHeight);
+ radius=Math.min(group.clientWidth,group.clientHeight)*.48;
+ bodies.forEach((b,i)=>{
+  if(!started){b.x=maxX*(i?.78:.22);b.y=maxY*(i?.65:.35);}
+  b.x=Math.max(0,Math.min(maxX,b.x));b.y=Math.max(0,Math.min(maxY,b.y));
+  if(b.grab){const rect=arena.getBoundingClientRect();b.grab.left=rect.left;b.grab.top=rect.top;b.grab.targetX=b.x;b.grab.targetY=b.y;}
+ });paint();resume();
+}
+const originalGroupSource=bodies[0].image.src;
 let groupPixels;
+const deformationSources=new Map([[0,originalGroupSource]]);
 function expandCenter(level){
- if(level===0){groupImage.src=originalGroupSource;return;}
+ if(deformationSources.has(level))return deformationSources.get(level);
  const canvas=document.createElement('canvas');
  if(!groupPixels){
-  canvas.width=groupImage.naturalWidth;canvas.height=groupImage.naturalHeight;
-  const context=canvas.getContext('2d');
-  context.drawImage(groupImage,0,0);
+  canvas.width=bodies[0].image.naturalWidth;canvas.height=bodies[0].image.naturalHeight;
+  const context=canvas.getContext('2d');context.drawImage(bodies[0].image,0,0);
   groupPixels=context.getImageData(0,0,canvas.width,canvas.height);
  }
- const {width,height,data}=groupPixels;
- canvas.width=width;canvas.height=height;
- const context=canvas.getContext('2d');
- const output=context.createImageData(width,height);
- // Inverse radial mapping: expand the center and compress the outer ring.
- // The ellipse boundary stays fixed, so every stage has the same dimensions.
- const power=1+level*.45;
+ const {width,height,data}=groupPixels;canvas.width=width;canvas.height=height;
+ const context=canvas.getContext('2d'),output=context.createImageData(width,height),power=1+level*.45;
  for(let py=0;py<height;py++)for(let px=0;px<width;px++){
-  const nx=(px-(width-1)/2)/(width/2),ny=(py-(height-1)/2)/(height/2);
-  const radius=Math.hypot(nx,ny);
-  const factor=radius>0&&radius<1?Math.pow(radius,power-1):1;
+  const nx=(px-(width-1)/2)/(width/2),ny=(py-(height-1)/2)/(height/2),r=Math.hypot(nx,ny);
+  const factor=r>0&&r<1?Math.pow(r,power-1):1;
   const sx=Math.max(0,Math.min(width-1,(width-1)/2+nx*factor*width/2));
   const sy=Math.max(0,Math.min(height-1,(height-1)/2+ny*factor*height/2));
   const ix=Math.floor(sx),iy=Math.floor(sy),fx=sx-ix,fy=sy-iy;
   const a=(iy*width+ix)*4,b=(iy*width+Math.min(ix+1,width-1))*4;
   const c=(Math.min(iy+1,height-1)*width+ix)*4,d=(Math.min(iy+1,height-1)*width+Math.min(ix+1,width-1))*4;
-  const dest=(py*width+px)*4;
-  for(let channel=0;channel<4;channel++)output.data[dest+channel]=
-   (data[a+channel]*(1-fx)+data[b+channel]*fx)*(1-fy)+
-   (data[c+channel]*(1-fx)+data[d+channel]*fx)*fy;
+  for(let ch=0;ch<4;ch++)output.data[(py*width+px)*4+ch]=(data[a+ch]*(1-fx)+data[b+ch]*fx)*(1-fy)+(data[c+ch]*(1-fx)+data[d+ch]*fx)*fy;
  }
- context.putImageData(output,0,0);
- groupImage.src=canvas.toDataURL('image/png');
+ context.putImageData(output,0,0);const source=canvas.toDataURL('image/png');deformationSources.set(level,source);return source;
 }
-const fragments=new Set();
-function clearFragments(){for(const fragment of fragments)fragment.remove();fragments.clear();}
-function inflate(){
- if(!started)return;
- stopAutoMotion();
- throwSpeed=0;
- if(burst){
-  burst=false;inflation=0;clearFragments();
-  vx=Math.sign(vx)*INITIAL_VX;vy=Math.sign(vy)*INITIAL_VY;
-  groupImage.style.visibility='';
- }else if(inflation===3){
-  burst=true;
-  deformation?.cancel();
-  groupImage.style.visibility='hidden';
-  group.setAttribute('aria-label','Volver a mostrar figura');
+function inflate(body){
+ if(!started)return;stopPlans();body.deformation?.cancel();
+ if(body.burst){
+  body.burst=false;body.inflation=0;
+  for(const fragment of body.fragments)fragment.remove();body.fragments.clear();
+  body.vx=(Math.sign(body.vx)||1)*92;body.vy=(Math.sign(body.vy)||1)*74;body.targetSpeed=0;body.image.style.visibility='';
+ }else if(body.inflation===3){
+  body.burst=true;body.image.style.visibility='hidden';body.element.setAttribute('aria-label','Volver a mostrar figura');
   if(!reducedMotion.matches){
-   const width=group.clientWidth,height=group.clientHeight;
+   const width=body.element.clientWidth,height=body.element.clientHeight;
    for(let row=0;row<4;row++)for(let col=0;col<4;col++){
-    const fragment=document.createElement('span');
-    fragment.className='group-fragment';
-    fragment.style.cssText=`left:${x+col*width/4}px;top:${y+row*height/4}px;width:${width/4+1}px;height:${height/4+1}px;background-image:url("${groupImage.src}");background-size:${width}px ${height}px;background-position:${-col*width/4}px ${-row*height/4}px;filter:${groupImage.style.filter}`;
-    arena.append(fragment);fragments.add(fragment);
-    const dx=(col-1.5)*55,dy=(row-1.5)*55;
-    const animation=fragment.animate([
-     {transform:'translate(0,0) scale(1)',opacity:1},
-     {transform:`translate(${dx}px,${dy}px) rotate(${(col-row)*30}deg) scale(.25)`,opacity:0}
-    ],{duration:650,easing:'cubic-bezier(.16,.7,.3,1)',fill:'forwards'});
-    animation.onfinish=()=>{fragment.remove();fragments.delete(fragment);};
+    const fragment=document.createElement('span');fragment.className='group-fragment';
+    fragment.style.cssText=`left:${body.x+col*width/4}px;top:${body.y+row*height/4}px;width:${width/4+1}px;height:${height/4+1}px;background-image:url("${body.image.src}");background-size:${width}px ${height}px;background-position:${-col*width/4}px ${-row*height/4}px;filter:${body.image.style.filter}`;
+    arena.append(fragment);body.fragments.add(fragment);
+    const animation=fragment.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${(col-1.5)*55}px,${(row-1.5)*55}px) rotate(${(col-row)*30}deg) scale(.25)`,opacity:0}],{duration:650,easing:'cubic-bezier(.16,.7,.3,1)',fill:'forwards'});
+    animation.onfinish=()=>{fragment.remove();body.fragments.delete(fragment);};
    }
   }
   resume();return;
- }else{inflation++;vx*=2;vy*=2;}
- deformation?.cancel();
- expandCenter(inflation);
- group.setAttribute('aria-label',inflation===3?'Explotar figura':'Inflar figura');
- if(!reducedMotion.matches)deformation=groupImage.animate([
-  {transform:'translateX(-2px)'},
-  {transform:'translateX(2px)',offset:.35},
-  {transform:'translateX(-1px)',offset:.7},
-  {transform:'translateX(0)'}
- ],{duration:480,easing:'ease-out'});
+ }else{body.inflation++;body.vx*=2;body.vy*=2;if(body.targetSpeed)body.targetSpeed*=2;}
+ body.image.src=expandCenter(body.inflation);
+ body.element.setAttribute('aria-label',body.inflation===3?'Explotar figura':'Inflar figura');
+ if(!reducedMotion.matches)body.deformation=body.image.animate([{transform:'translateX(-2px)'},{transform:'translateX(2px)',offset:.35},{transform:'translateX(-1px)',offset:.7},{transform:'translateX(0)'}],{duration:480,easing:'ease-out'});
  resume();
 }
-group.addEventListener('click',event=>{
- event.stopPropagation();
- if(event.detail!==0&&performance.now()<suppressClickUntil)return;
- inflate();
-});
-arena.addEventListener('click',()=>{if(burst)inflate();});
+function finishGrab(body,event){
+ const grab=body.grab;if(!grab||event.pointerId!==grab.id)return;
+ clearTimeout(grab.timer);body.grab=null;
+ if(grab.dragging){
+  body.x=grab.targetX;body.y=grab.targetY;body.suppressUntil=performance.now()+500;
+  const speed=Math.hypot(grab.vx,grab.vy);
+  if(speed>30&&performance.now()-grab.time<120&&event.type!=='pointercancel'){
+   body.targetSpeed=Math.hypot(92,74)*2**body.inflation;
+   const launch=Math.max(body.targetSpeed,Math.min(speed,1800));body.vx=grab.vx/speed*launch;body.vy=grab.vy/speed*launch;
+  }else{body.vx=grab.savedVx;body.vy=grab.savedVy;}
+ }
+ body.element.classList.remove('dragging');
+ if(body.element.hasPointerCapture(event.pointerId))body.element.releasePointerCapture(event.pointerId);
+ paint();resume();
+}
+for(const body of bodies){
+ body.image.addEventListener('load',resize);
+ body.element.addEventListener('pointerdown',event=>{
+  if(!started||body.burst||body.grab||event.button!==0)return;
+  stopPlans();const rect=arena.getBoundingClientRect();
+  const grab=body.grab={id:event.pointerId,left:rect.left,top:rect.top,offsetX:event.clientX-rect.left-body.x,offsetY:event.clientY-rect.top-body.y,
+   startX:event.clientX,startY:event.clientY,previousX:event.clientX,previousY:event.clientY,savedVx:body.vx,savedVy:body.vy,time:performance.now(),vx:0,vy:0,targetX:body.x,targetY:body.y,dragging:false,timer:null};
+  body.element.setPointerCapture(event.pointerId);
+  grab.timer=setTimeout(()=>{if(body.grab===grab){grab.dragging=true;body.element.classList.add('dragging');}},180);resume();
+ });
+ body.element.addEventListener('pointermove',event=>{
+  const g=body.grab;if(!g||g.id!==event.pointerId)return;
+  const now=performance.now(),dt=Math.max((now-g.time)/1000,.008),blend=1-Math.exp(-dt*35);
+  if(Math.hypot(event.clientX-g.startX,event.clientY-g.startY)>6){g.dragging=true;clearTimeout(g.timer);body.element.classList.add('dragging');}
+  g.vx+=((event.clientX-g.previousX)/dt-g.vx)*blend;g.vy+=((event.clientY-g.previousY)/dt-g.vy)*blend;
+  g.previousX=event.clientX;g.previousY=event.clientY;g.time=now;
+  if(g.dragging){
+   g.targetX=Math.max(0,Math.min(maxX,event.clientX-g.left-g.offsetX));g.targetY=Math.max(0,Math.min(maxY,event.clientY-g.top-g.offsetY));
+   body.vx=Math.max(-1000,Math.min(1000,g.vx));body.vy=Math.max(-1000,Math.min(1000,g.vy));
+  }
+ });
+ for(const name of ['pointerup','pointercancel','lostpointercapture'])body.element.addEventListener(name,event=>finishGrab(body,event));
+ for(const name of ['contextmenu','dragstart'])body.element.addEventListener(name,event=>event.preventDefault());
+ body.element.addEventListener('click',event=>{event.stopPropagation();if(event.detail!==0&&performance.now()<body.suppressUntil)return;inflate(body);});
+}
+arena.addEventListener('click',()=>{for(const body of bodies)if(body.burst)inflate(body);});
+new ResizeObserver(resize).observe(arena);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)for(const b of bodies)if(b.grab)finishGrab(b,{pointerId:b.grab.id,type:'pointercancel'});resume();});
+reducedMotion.addEventListener('change',()=>{resize();resume();});
 const assets=[...document.images].map(img=>img.decode().catch(()=>{}));
 function enter(){
  if(!loaded||started)return;
