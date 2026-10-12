@@ -22,6 +22,53 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let x=0,y=0,vx=92,vy=74,maxX=0,maxY=0,last=0,frame=0,started=false,loaded=false;
 const INITIAL_VX=92,INITIAL_VY=74;
 let hue=0;
+let grab=null,suppressClickUntil=0;
+const HOLD_DELAY=180;
+function finishGrab(event){
+ if(!grab||event.pointerId!==grab.id)return;
+ const held=grab;
+ clearTimeout(held.timer);
+ grab=null;
+ if(held.dragging){
+  suppressClickUntil=performance.now()+500;
+  // Keep each inflation stage's speed, but carry the release direction forward.
+  const length=Math.hypot(held.velocityX,held.velocityY);
+  if(length>30&&performance.now()-held.previousTime<120&&event.type!=='pointercancel'){
+   const speed=Math.hypot(vx,vy);
+   vx=held.velocityX/length*speed;vy=held.velocityY/length*speed;
+  }
+ }
+ if(group.hasPointerCapture(event.pointerId))group.releasePointerCapture(event.pointerId);
+ group.classList.remove('dragging');
+ last=0;resume();
+}
+group.addEventListener('pointerdown',event=>{
+ if(!started||burst||grab||!event.isPrimary||event.button!==0)return;
+ const rect=arena.getBoundingClientRect();
+ grab={id:event.pointerId,offsetX:event.clientX-rect.left-x,offsetY:event.clientY-rect.top-y,
+  targetX:x,targetY:y,velocityX:0,velocityY:0,previousX:event.clientX,previousY:event.clientY,
+  previousTime:performance.now(),dragging:false,timer:null};
+ group.setPointerCapture(event.pointerId);
+ grab.timer=setTimeout(()=>{
+  if(!grab)return;
+  grab.dragging=true;group.classList.add('dragging');
+  // Reduced motion still permits intentional direct manipulation.
+  cancelAnimationFrame(frame);last=0;frame=requestAnimationFrame(animate);
+ },HOLD_DELAY);
+});
+group.addEventListener('pointermove',event=>{
+ if(!grab||event.pointerId!==grab.id)return;
+ const rect=arena.getBoundingClientRect(),now=performance.now();
+ const elapsed=Math.max((now-grab.previousTime)/1000,.008);
+ grab.velocityX=(event.clientX-grab.previousX)/elapsed;
+ grab.velocityY=(event.clientY-grab.previousY)/elapsed;
+ grab.previousX=event.clientX;grab.previousY=event.clientY;grab.previousTime=now;
+ grab.targetX=Math.max(0,Math.min(maxX,event.clientX-rect.left-grab.offsetX));
+ grab.targetY=Math.max(0,Math.min(maxY,event.clientY-rect.top-grab.offsetY));
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])group.addEventListener(event,finishGrab);
+group.addEventListener('contextmenu',event=>event.preventDefault());
+group.addEventListener('dragstart',event=>event.preventDefault());
 function changeColor(){
  hue=(hue+70+Math.random()*140)%360;
  groupImage.style.filter=`sepia(1) saturate(8) hue-rotate(${hue}deg) brightness(.95)`;
@@ -41,13 +88,22 @@ function bounce(position,velocity,limit,delta){
 }
 function animate(now){
  const dt=last?Math.min((now-last)/1000,.05):0;last=now;
- [x,vx]=bounce(x,vx,maxX,dt);[y,vy]=bounce(y,vy,maxY,dt);paint();
+ if(grab?.dragging){
+  const follow=reducedMotion.matches?1:1-Math.exp(-28*dt);
+  x+=(grab.targetX-x)*follow;y+=(grab.targetY-y)*follow;
+ }else if(!grab){
+  [x,vx]=bounce(x,vx,maxX,dt);[y,vy]=bounce(y,vy,maxY,dt);
+ }
+ paint();
  frame=requestAnimationFrame(animate);
 }
 function resume(){cancelAnimationFrame(frame);last=0;if(started&&!document.hidden&&!reducedMotion.matches)frame=requestAnimationFrame(animate);}
 new ResizeObserver(resize).observe(arena);
 groupImage.addEventListener('load',resize);
-document.addEventListener('visibilitychange',resume);
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden&&grab)finishGrab({pointerId:grab.id});
+ resume();
+});
 reducedMotion.addEventListener('change',()=>{resize();resume();});
 // The moving button remains available after the image bursts, for the fifth tap.
 let inflation=0,burst=false;
@@ -127,7 +183,11 @@ function inflate(){
   {transform:'translateX(0)'}
  ],{duration:480,easing:'ease-out'});
 }
-group.addEventListener('click',event=>{event.stopPropagation();inflate();});
+group.addEventListener('click',event=>{
+ event.stopPropagation();
+ if(event.detail!==0&&performance.now()<suppressClickUntil)return;
+ inflate();
+});
 arena.addEventListener('click',()=>{if(burst)inflate();});
 const assets=[...document.images].map(img=>img.decode().catch(()=>{}));
 function enter(){
