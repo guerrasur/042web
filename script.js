@@ -25,12 +25,20 @@ let hue=0;
 let grab=null,suppressClickUntil=0;
 const HOLD_DELAY=180;
 let throwSpeed=0;
+function beginDrag(){
+ if(!grab||grab.dragging)return;
+ clearTimeout(grab.timer);
+ grab.dragging=true;group.classList.add('dragging');
+ // One frame loop; direct manipulation stays active with reduced motion.
+ if(reducedMotion.matches){cancelAnimationFrame(frame);last=0;frame=requestAnimationFrame(animate);}
+}
 function finishGrab(event){
  if(!grab||event.pointerId!==grab.id)return;
  const held=grab;
  clearTimeout(held.timer);
  grab=null;
  if(held.dragging){
+  x=held.targetX;y=held.targetY;paint();
   suppressClickUntil=performance.now()+500;
   // Launch in the gesture direction, then ease back to the current stage's speed.
   const length=Math.hypot(held.velocityX,held.velocityY);
@@ -49,26 +57,23 @@ group.addEventListener('pointerdown',event=>{
  if(!started||burst||grab||!event.isPrimary||event.button!==0)return;
  const rect=arena.getBoundingClientRect();
  grab={id:event.pointerId,offsetX:event.clientX-rect.left-x,offsetY:event.clientY-rect.top-y,
-  targetX:x,targetY:y,velocityX:0,velocityY:0,previousX:event.clientX,previousY:event.clientY,
+  targetX:x,targetY:y,arenaLeft:rect.left,arenaTop:rect.top,startX:event.clientX,startY:event.clientY,
+  velocityX:0,velocityY:0,previousX:event.clientX,previousY:event.clientY,
   previousTime:performance.now(),dragging:false,timer:null};
  group.setPointerCapture(event.pointerId);
- grab.timer=setTimeout(()=>{
-  if(!grab)return;
-  grab.dragging=true;group.classList.add('dragging');
-  // Reduced motion still permits intentional direct manipulation.
-  cancelAnimationFrame(frame);last=0;frame=requestAnimationFrame(animate);
- },HOLD_DELAY);
+ grab.timer=setTimeout(beginDrag,HOLD_DELAY);
 });
 group.addEventListener('pointermove',event=>{
  if(!grab||event.pointerId!==grab.id)return;
- const rect=arena.getBoundingClientRect(),now=performance.now();
+ const now=performance.now();
+ if(Math.hypot(event.clientX-grab.startX,event.clientY-grab.startY)>6)beginDrag();
  const elapsed=Math.max((now-grab.previousTime)/1000,.008);
  const blend=1-Math.exp(-elapsed*35);
  grab.velocityX+=((event.clientX-grab.previousX)/elapsed-grab.velocityX)*blend;
  grab.velocityY+=((event.clientY-grab.previousY)/elapsed-grab.velocityY)*blend;
  grab.previousX=event.clientX;grab.previousY=event.clientY;grab.previousTime=now;
- grab.targetX=Math.max(0,Math.min(maxX,event.clientX-rect.left-grab.offsetX));
- grab.targetY=Math.max(0,Math.min(maxY,event.clientY-rect.top-grab.offsetY));
+ grab.targetX=Math.max(0,Math.min(maxX,event.clientX-grab.arenaLeft-grab.offsetX));
+ grab.targetY=Math.max(0,Math.min(maxY,event.clientY-grab.arenaTop-grab.offsetY));
 });
 for(const event of ['pointerup','pointercancel','lostpointercapture'])group.addEventListener(event,finishGrab);
 group.addEventListener('contextmenu',event=>event.preventDefault());
@@ -79,9 +84,14 @@ function changeColor(){
 }
 function paint(){group.style.transform=`translate3d(${x}px,${y}px,0)`;}
 function resize(){
+ if(grab){
+  const rect=arena.getBoundingClientRect();
+  grab.arenaLeft=rect.left;grab.arenaTop=rect.top;
+ }
  maxX=Math.max(0,arena.clientWidth-group.clientWidth);
  maxY=Math.max(0,arena.clientHeight-group.clientHeight);
  if(!started||reducedMotion.matches){x=maxX/2;y=maxY/2;}else{x=Math.min(maxX,Math.max(0,x));y=Math.min(maxY,Math.max(0,y));}
+ if(grab){grab.targetX=Math.min(maxX,grab.targetX);grab.targetY=Math.min(maxY,grab.targetY);}
  paint();
 }
 function bounce(position,velocity,limit,delta){
@@ -93,8 +103,8 @@ function bounce(position,velocity,limit,delta){
 function animate(now){
  const dt=last?Math.min((now-last)/1000,.05):0;last=now;
  if(grab?.dragging){
-  const follow=reducedMotion.matches?1:1-Math.exp(-28*dt);
-  x+=(grab.targetX-x)*follow;y+=(grab.targetY-y)*follow;
+  // Follow the latest pointer position exactly, without a trailing spring.
+  x=grab.targetX;y=grab.targetY;
  }else if(!grab){
   if(throwSpeed){
    const speed=Math.hypot(vx,vy);
