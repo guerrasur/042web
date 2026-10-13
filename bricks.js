@@ -155,12 +155,18 @@ class FaceBricks extends FaceShooter {
   for(let distance=0;distance<=lengths.at(-1);distance+=10){
    let i=1;while(i<lengths.length-1&&lengths[i]<distance)i++;
    const segment=lengths[i]-lengths[i-1],t=segment?(distance-lengths[i-1])/segment:0;
-   dots.push({x:points[i-1].x+(points[i].x-points[i-1].x)*t,y:points[i-1].y+(points[i].y-points[i-1].y)*t,radius:2.6});
+   dots.push({x:points[i-1].x+(points[i].x-points[i-1].x)*t,y:points[i-1].y+(points[i].y-points[i-1].y)*t,distance,radius:2.6});
   }
-  // Include the exact turns/endpoints so the highest visible point is always red.
-  for(const p of points.slice(1))if(!dots.some(d=>Math.hypot(d.x-p.x,d.y-p.y)<4))dots.push({x:p.x,y:p.y,radius:2.6});
-  const top=Math.min(...dots.map(d=>d.y)),bottom=Math.max(...dots.map(d=>d.y));
-  for(const dot of dots)dot.hue=bottom-top>.001?240*(dot.y-top)/(bottom-top):0;
+  // Color follows cumulative path length, including all reflected segments.
+  points.slice(1).forEach((p,i)=>{
+   const distance=lengths[i+1];
+   const nearby=dots.findIndex(d=>Math.abs(d.distance-distance)<4);
+   const dot={x:p.x,y:p.y,distance,radius:2.6};
+   if(nearby>=0)dots[nearby]=dot;else dots.push(dot);
+  });
+  dots.sort((a,b)=>a.distance-b.distance);
+  const total=lengths.at(-1);
+  for(const dot of dots)dot.hue=total?240*(1-dot.distance/total):0;
   return dots;
  }
  drawTrajectory(){
