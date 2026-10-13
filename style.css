@@ -67,3 +67,11 @@ html,body{touch-action:manipulation}
 
 /* Reserve a fourth row so the three menu choices sit above center. */
 .menu-options::after{content:"";display:block;height:min(80px,10dvh);flex:none}
+
+.face-bricks.awaiting-resume canvas{opacity:.35;transition:opacity .2s}
+.bricks-resume[hidden]{display:none}
+.bricks-resume{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:2}
+.bricks-resume p{margin:0;padding:16px 20px;background:#000;border-radius:12px;font-size:clamp(19px,5vw,25px);text-align:center}
+.bricks-resume>div{display:flex;gap:20px}
+.bricks-resume button{min-width:72px;min-height:48px;border:1px solid #fff;border-radius:0;padding:10px 20px;background:#000;color:#fff;cursor:pointer}
+.bricks-resume button:focus-visible{outline:2px solid #fa8429;outline-offset:4px}

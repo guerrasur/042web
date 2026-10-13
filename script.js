@@ -223,6 +223,7 @@ for(const body of bodies){
 shooter=new window.FaceShooter(arena,originalGroupSource);
 bricks=new window.FaceBricks(arena,originalGroupSource);
 function openGame(game){
+ bricks.pause();
  
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const current of [shooter,bricks]){
@@ -261,6 +262,7 @@ function setMenu(open){
  }else menuToggle.focus({preventScroll:true});
 }
 function resetHome(){
+ bricks.pause();
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const game of [shooter,bricks]){
   game.active=false;game.pointer=null;game.root.hidden=true;cancelAnimationFrame(game.frame);

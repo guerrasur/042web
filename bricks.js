@@ -15,8 +15,72 @@ class FaceBricks extends FaceShooter {
   this.record=0;
   try{const saved=Number(localStorage.getItem('042-bricks-record'));if(Number.isSafeInteger(saved)&&saved>=0)this.record=saved;}catch{}
 
+  this.initialized=false;this.awaitingResume=false;this.lastSave=0;
+  this.savedGame=this.readSavedGame();
+  this.resumePrompt=document.createElement('div');this.resumePrompt.className='bricks-resume';this.resumePrompt.hidden=true;
+  this.resumePrompt.setAttribute('role','dialog');this.resumePrompt.setAttribute('aria-modal','true');this.resumePrompt.setAttribute('aria-labelledby','bricks-resume-title');
+  this.resumePrompt.innerHTML='<p id="bricks-resume-title">¿Retomar por donde ibas?</p><div><button type="button" data-resume="yes">Sí</button><button type="button" data-resume="no">No</button></div>';
+  this.root.append(this.resumePrompt);
+  const choices=[...this.resumePrompt.querySelectorAll('button')];
+  choices.forEach(button=>button.addEventListener('click',()=>this.chooseResume(button.dataset.resume==='yes')));
+  this.resumePrompt.addEventListener('keydown',event=>{if(event.key==='Tab'){event.preventDefault();choices[document.activeElement===choices[0]?1:0].focus({preventScroll:true});}});
+  window.addEventListener('pagehide',()=>this.saveGame());
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)this.saveGame();});
+
   this.canvas.setAttribute('aria-label','Dispará las caras contra los bloques numerados. Arrastrá para apuntar y soltá para disparar.');
  }
+
+ readSavedGame(){
+  try{
+   const state=JSON.parse(localStorage.getItem('042-bricks-game')||'null');
+   if(!state||state.version!==1||!Array.isArray(state.blocks)||!Array.isArray(state.balls)||state.blocks.length>600||state.balls.length>10000)return null;
+   for(const field of ['width','height','count','turn','destroyed','pending','emitted','returned','color','volleyColor','descent','angle','elapsed','launchX'])if(!Number.isFinite(state[field]))return null;
+   if(state.width<=0||state.height<=0||state.count<5||state.turn<1||state.descent<0||state.descent>.32||![null,true].includes(state.shot))return null;
+   if(state.landing!==null&&!Number.isFinite(state.landing))return null;
+   if(!Number.isInteger(state.color)||state.color<0||state.color>3||!Number.isInteger(state.volleyColor)||state.volleyColor<0||state.volleyColor>3)return null;
+   if(state.shot&&(!Number.isFinite(state.volleyCount)||!Number.isFinite(state.volleyAngle)))return null;
+   if(state.blocks.some(b=>!Number.isInteger(b.col)||b.col<0||b.col>5||!Number.isInteger(b.row)||b.row<0||!Number.isFinite(b.hp)||b.hp<=0))return null;
+   if(state.balls.some(b=>['x','y','vx','vy','color','age','born'].some(key=>!Number.isFinite(b[key]))))return null;
+   return state;
+  }catch{return null;}
+ }
+ saveGame(){
+  if(!this.initialized||this.awaitingResume)return;
+  try{
+   if(this.over){localStorage.removeItem('042-bricks-game');return;}
+   const state={version:1,blocks:this.blocks,balls:this.balls};
+   for(const field of ['width','height','count','turn','destroyed','pending','emitted','returned','color','volleyColor','descent','shot','angle','volleyAngle','volleyCount','elapsed','landing','launchX'])state[field]=this[field];
+   localStorage.setItem('042-bricks-game',JSON.stringify(state));
+  }catch{}
+ }
+ start(){
+  this.active=true;this.root.hidden=false;this.prepareSprites();
+  if(!this.initialized&&this.savedGame){
+   const state=this.savedGame;
+   for(const field of ['width','height','count','turn','destroyed','pending','emitted','returned','color','volleyColor','descent','shot','angle','volleyAngle','volleyCount','elapsed','landing','launchX'])this[field]=state[field];
+   this.blocks=state.blocks.map(b=>({...b}));this.balls=state.balls.map(b=>({...b}));this.effects=[];this.pointer=null;this.over=false;this.last=0;
+   this.initialized=true;this.awaitingResume=true;this.result.hidden=true;
+   this.root.classList.add('awaiting-resume');this.canvas.inert=true;this.resumePrompt.hidden=false;
+  }
+  this.resize();
+  if(!this.initialized)this.reset();
+  else if(!this.awaitingResume){this.last=0;this.loop();}
+  if(this.awaitingResume){this.draw();this.resumePrompt.querySelector('button').focus({preventScroll:true});}
+  else this.canvas.focus({preventScroll:true});
+ }
+ chooseResume(resume){
+  if(!this.awaitingResume)return;
+  this.awaitingResume=false;this.savedGame=null;this.root.classList.remove('awaiting-resume');this.canvas.inert=false;this.resumePrompt.hidden=true;
+  if(resume){this.last=0;this.saveGame();this.loop();}else this.reset();
+  this.canvas.focus({preventScroll:true});
+ }
+ pause(){
+  this.saveGame();this.active=false;cancelAnimationFrame(this.frame);this.last=0;
+  const pointer=this.pointer;this.pointer=null;
+  if(pointer!==null&&this.canvas.hasPointerCapture(pointer))this.canvas.releasePointerCapture(pointer);
+ }
+ loop(){if(this.awaitingResume){cancelAnimationFrame(this.frame);return;}super.loop();}
+
  resize(){
   const oldWidth=this.width||1,oldHeight=this.height||1;
   this.width=this.canvas.clientWidth;this.height=this.canvas.clientHeight;
@@ -27,13 +91,14 @@ class FaceBricks extends FaceShooter {
   this.launchX=this.launchX?this.launchX*this.width/oldWidth:this.width/2;
   for(const b of this.balls||[]){b.x*=this.width/oldWidth;b.y*=this.height/oldHeight;}
   this.last=0;this.rect=this.canvas.getBoundingClientRect();
-  if(!this.descent&&this.blocks?.some(b=>this.blockRect(b).y+this.tile>this.launchY-this.size))this.lose();
+  if(!this.awaitingResume&&!this.descent&&this.blocks?.some(b=>this.blockRect(b).y+this.tile>this.launchY-this.size))this.lose();
  }
  reset(){
+  this.initialized=true;
   this.blocks=[];this.balls=[];this.effects=[];this.shot=null;this.pointer=null;
   this.angle=-Math.PI/2;this.count=5;this.turn=1;this.destroyed=0;this.pending=0;this.emitted=0;this.returned=0;
   this.color=0;this.volleyColor=0;this.descent=0;this.over=false;this.last=0;this.elapsed=0;this.landing=null;this.launchX=this.width/2;this.result.hidden=true;
-  this.addRow();this.updateScore();this.loop();
+  this.addRow();this.updateScore();this.saveGame();this.loop();
  }
  blockHue(hp){return Math.min(280,Math.log2(Math.max(1,hp))*40);}
  blockColor(hp,alpha=1){return `hsla(${this.blockHue(hp)},85%,65%,${alpha})`;}
@@ -80,10 +145,11 @@ class FaceBricks extends FaceShooter {
   try{localStorage.setItem('042-bricks-record',String(this.record));}catch{}
   this.result.querySelector('p').textContent=`Wachos recolectados: ${this.count}`;
   this.recordLabel.textContent=`Record: ${this.record}`;
-  this.result.hidden=false;
+  this.result.hidden=false;this.saveGame();
  }
 
  step(dt){
+  if(this.awaitingResume)return;
   if(this.descent>0){
    this.descent=Math.max(0,this.descent-dt);
    if(this.descent===0&&this.blocks.some(b=>this.blockRect(b).y+this.tile>this.launchY-this.size))this.lose();
@@ -105,6 +171,7 @@ class FaceBricks extends FaceShooter {
   }
   for(const effect of this.effects)effect.age+=dt;
   this.effects=this.effects.filter(effect=>effect.age<.35);
+  const now=performance.now();if(now-this.lastSave>=500){this.lastSave=now;this.saveGame();}
  }
  impact(ball,maxDistance=Infinity){
   const speed=Math.hypot(ball.vx,ball.vy),dx=ball.vx/speed,dy=ball.vy/speed;
