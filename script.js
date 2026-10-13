@@ -196,20 +196,22 @@ function finishGrab(body,event){
  }
  body.element.classList.remove('dragging');
  if(body.element.hasPointerCapture(event.pointerId))body.element.releasePointerCapture(event.pointerId);
- paint();resume();
+ paint();
+ if(event.type==='pointerup'&&!grab.dragging){body.suppressUntil=performance.now()+600;inflate(body);}
+ else resume();
 }
 for(const body of bodies){
  body.image.addEventListener('load',resize);
  body.element.addEventListener('pointerdown',event=>{
-  if(!started||!body.active||body.burst||body.grab||event.button!==0)return;
+  if(!started||!body.active||body.grab||event.button!==0)return;
   stopPlans();const rect=arena.getBoundingClientRect();
   const grab=body.grab={id:event.pointerId,left:rect.left,top:rect.top,offsetX:event.clientX-rect.left-body.x,offsetY:event.clientY-rect.top-body.y,
    startX:event.clientX,startY:event.clientY,previousX:event.clientX,previousY:event.clientY,savedVx:body.vx,savedVy:body.vy,time:performance.now(),vx:0,vy:0,targetX:body.x,targetY:body.y,dragging:false,timer:null};
   body.element.setPointerCapture(event.pointerId);
-  grab.timer=setTimeout(()=>{if(body.grab===grab){grab.dragging=true;body.element.classList.add('dragging');}},180);resume();
+  grab.timer=setTimeout(()=>{if(!body.burst&&body.grab===grab){grab.dragging=true;body.element.classList.add('dragging');}},180);resume();
  });
  body.element.addEventListener('pointermove',event=>{
-  const g=body.grab;if(!g||g.id!==event.pointerId)return;
+  const g=body.grab;if(!g||g.id!==event.pointerId||body.burst)return;
   const now=performance.now(),dt=Math.max((now-g.time)/1000,.008),blend=1-Math.exp(-dt*35);
   if(Math.hypot(event.clientX-g.startX,event.clientY-g.startY)>6){g.dragging=true;clearTimeout(g.timer);body.element.classList.add('dragging');}
   g.vx+=((event.clientX-g.previousX)/dt-g.vx)*blend;g.vy+=((event.clientY-g.previousY)/dt-g.vy)*blend;
@@ -219,12 +221,12 @@ for(const body of bodies){
    body.vx=Math.max(-1000,Math.min(1000,g.vx));body.vy=Math.max(-1000,Math.min(1000,g.vy));
   }
  });
- for(const name of ['pointerup','pointercancel','lostpointercapture'])body.element.addEventListener(name,event=>finishGrab(body,event));
+ for(const name of ['pointerup','pointercancel','lostpointercapture'])body.element.addEventListener(name,event=>{event.stopPropagation();finishGrab(body,event);});
  for(const name of ['contextmenu','dragstart'])body.element.addEventListener(name,event=>event.preventDefault());
  body.element.addEventListener('click',event=>{event.stopPropagation();if(event.detail!==0&&performance.now()<body.suppressUntil)return;inflate(body);});
 }
 shooter=new window.FaceShooter(arena,originalGroupSource);
-arena.addEventListener('click',event=>{
+function tapArena(event){
  if(!started||shooter.active||event.target!==arena)return;
  const other=bodies[1];
  if(!other.active){
@@ -235,7 +237,23 @@ arena.addEventListener('click',event=>{
   other.active=true;other.element.hidden=false;paint();resume();return;
  }
  for(const body of bodies)if(body.active&&body.burst)inflate(body);
+}
+let arenaTouch=null,arenaClickUntil=0;
+arena.addEventListener('pointerdown',event=>{
+ if(event.target!==arena||event.button!==0||arenaTouch)return;
+ arenaTouch={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+ arena.setPointerCapture(event.pointerId);
 });
+arena.addEventListener('pointermove',event=>{
+ if(arenaTouch?.id===event.pointerId&&Math.hypot(event.clientX-arenaTouch.x,event.clientY-arenaTouch.y)>8)arenaTouch.moved=true;
+});
+for(const name of ['pointerup','pointercancel','lostpointercapture'])arena.addEventListener(name,event=>{
+ if(arenaTouch?.id!==event.pointerId)return;
+ const touch=arenaTouch;arenaTouch=null;arenaClickUntil=performance.now()+600;
+ if(arena.hasPointerCapture(event.pointerId))arena.releasePointerCapture(event.pointerId);
+ if(name==='pointerup'&&!touch.moved)tapArena(event);
+});
+arena.addEventListener('click',event=>{if(event.detail!==0&&performance.now()<arenaClickUntil)return;tapArena(event);});
 document.addEventListener('selectstart',event=>event.preventDefault());
 new ResizeObserver(resize).observe(arena);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)for(const b of bodies)if(b.grab)finishGrab(b,{pointerId:b.grab.id,type:'pointercancel'});resume();});
@@ -250,6 +268,7 @@ function enter(){
  document.getElementById('play-pause').disabled ? document.getElementById('presave').focus({preventScroll:true}) : document.getElementById('play-pause').focus({preventScroll:true});
  startAudio();resume();
 }
+loading.addEventListener('pointerup',event=>{if(event.button===0)enter();});
 loading.addEventListener('click',enter);
 loading.addEventListener('keydown',event=>{
  if(loaded&&(event.key==='Enter'||event.key===' ')){event.preventDefault();enter();}
@@ -312,7 +331,16 @@ function syncEntrance(){
  if(loaded)loading.tabIndex=0;else loading.removeAttribute('tabindex');
 }
 for(const event of ['loadeddata','canplay','canplaythrough','progress','waiting','stalled','error','emptied'])audio.addEventListener(event,syncEntrance);
-Promise.all(assets).then(()=>{entranceAssetsReady=true;syncEntrance();});
+Promise.all(assets).then(()=>{
+ entranceAssetsReady=true;syncEntrance();
+ // Prepare the three deformation stages during loading, before the first tap.
+ let stage=1;
+ const warm=()=>{
+  if(bodies[0].image.naturalWidth){try{expandCenter(stage);}catch{/* A later tap can retry. */}}
+  if(++stage<=3)setTimeout(warm,24);
+ };
+ setTimeout(warm,0);
+});
 setTimeout(()=>{entranceMinimumElapsed=true;syncEntrance();},3000);
 syncEntrance();
 

@@ -14,7 +14,7 @@ class FaceShooter {
    this.pointer=e.pointerId;this.rect=this.canvas.getBoundingClientRect();this.canvas.setPointerCapture(e.pointerId);this.aim(e);
   });
   this.canvas.addEventListener('pointermove',e=>{if(e.pointerId===this.pointer)this.aim(e);});
-  const release=(e,fire)=>{if(e.pointerId!==this.pointer)return;this.pointer=null;if(this.canvas.hasPointerCapture(e.pointerId))this.canvas.releasePointerCapture(e.pointerId);if(fire)this.fire();};
+  const release=(e,fire)=>{if(e.pointerId!==this.pointer)return;if(fire)this.aim(e);this.pointer=null;if(this.canvas.hasPointerCapture(e.pointerId))this.canvas.releasePointerCapture(e.pointerId);if(fire)this.fire();};
   this.canvas.addEventListener('pointerup',e=>release(e,true));
   this.canvas.addEventListener('pointercancel',e=>release(e,false));
   this.canvas.addEventListener('lostpointercapture',e=>release(e,false));
