@@ -133,7 +133,7 @@ class FaceBricks extends FaceShooter {
  }
  trajectory(){
   const ball={x:this.launchX,y:this.launchY,vx:Math.cos(this.angle)*560,vy:Math.sin(this.angle)*560};
-  const points=[];let traveled=0;const limit=this.size*3+Math.min(360,this.height*.7);
+  const points=[];let traveled=0;const limit=this.size*3+Math.min(420,this.height*.8);
   for(let i=0;i<5;i++){
    const speed=Math.hypot(ball.vx,ball.vy),dx=ball.vx/speed,dy=ball.vy/speed,hit=this.impact(ball,this.height*3);
    const wanted=hit?hit.distance:this.height*3,distance=Math.min(wanted,limit-traveled),capped=distance<wanted;
@@ -151,17 +151,16 @@ class FaceBricks extends FaceShooter {
   const points=this.trajectory();if(points.length<2)return [];
   const lengths=[0];
   for(let i=1;i<points.length;i++)lengths.push(lengths[i-1]+Math.hypot(points[i].x-points[i-1].x,points[i].y-points[i-1].y));
-  const impacts=points.flatMap((p,i)=>p.block?[lengths[i]]:[]),dots=[];
-  const hueAt=distance=>{
-   const next=impacts.find(impact=>impact>=distance-.01);
-   return next===undefined?210:Math.max(0,Math.min(240,(next-distance-18)/220*240));
-  };
-  for(let distance=0;distance<=lengths.at(-1);distance+=12){
+  const dots=[];
+  for(let distance=0;distance<=lengths.at(-1);distance+=10){
    let i=1;while(i<lengths.length-1&&lengths[i]<distance)i++;
    const segment=lengths[i]-lengths[i-1],t=segment?(distance-lengths[i-1])/segment:0;
-   dots.push({x:points[i-1].x+(points[i].x-points[i-1].x)*t,y:points[i-1].y+(points[i].y-points[i-1].y)*t,hue:hueAt(distance),radius:2.6});
+   dots.push({x:points[i-1].x+(points[i].x-points[i-1].x)*t,y:points[i-1].y+(points[i].y-points[i-1].y)*t,radius:2.6});
   }
-  points.forEach((p,i)=>{if(p.block)dots.push({x:p.x,y:p.y,hue:0,radius:3.3});});
+  // Include the exact turns/endpoints so the highest visible point is always red.
+  for(const p of points.slice(1))if(!dots.some(d=>Math.hypot(d.x-p.x,d.y-p.y)<4))dots.push({x:p.x,y:p.y,radius:2.6});
+  const top=Math.min(...dots.map(d=>d.y)),bottom=Math.max(...dots.map(d=>d.y));
+  for(const dot of dots)dot.hue=bottom-top>.001?240*(dot.y-top)/(bottom-top):0;
   return dots;
  }
  drawTrajectory(){
