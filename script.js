@@ -19,10 +19,8 @@ const arena=document.getElementById('arena');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
 let plans=null,planStates=null;
-let shooterTimer=null;
 let shooter=null;
 let bricks=null;
-let presaveTaps=0;
 const colorTimers=[];
 const group=document.getElementById('group');
 const heads=[group];
@@ -160,7 +158,7 @@ function expandCenter(level){
  context.putImageData(output,0,0);const source=canvas.toDataURL('image/png');deformationSources.set(level,source);return source;
 }
 function inflate(body){
- if(!started||!body.active||body.burst||shooter?.active)return;clearTimeout(shooterTimer);stopPlans();body.deformation?.cancel();
+ if(!started||!body.active||body.burst||shooter?.active)return;stopPlans();body.deformation?.cancel();
  if(body.inflation===3){
   body.burst=true;body.image.style.visibility='hidden';body.element.style.pointerEvents='none';body.element.tabIndex=-1;
   if(!reducedMotion.matches){
@@ -173,10 +171,6 @@ function inflate(body){
     animation.onfinish=()=>{fragment.remove();body.fragments.delete(fragment);};
    }
   }
-  if(bodies.every(b=>b.burst))shooterTimer=setTimeout(()=>{
-   if(!bodies.every(b=>b.burst)||shooter?.active||bricks?.active)return;
-   openGame(bricks);
-  },950);
   resume();return;
  }else{body.inflation++;body.vx*=2;body.vy*=2;if(body.targetSpeed)body.targetSpeed*=2;}
  body.image.src=expandCenter(body.inflation);
@@ -229,7 +223,7 @@ for(const body of bodies){
 shooter=new window.FaceShooter(arena,originalGroupSource);
 bricks=new window.FaceBricks(arena,originalGroupSource);
 function openGame(game){
- clearTimeout(shooterTimer);shooterTimer=null;
+ 
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const current of [shooter,bricks]){
   current.active=false;current.pointer=null;current.root.hidden=true;cancelAnimationFrame(current.frame);
@@ -240,6 +234,71 @@ function openGame(game){
  }
  game.start();
 }
+
+
+const menu=document.getElementById('site-menu');
+const menuToggle=document.getElementById('menu-toggle');
+const menuOptions=[...menu.querySelectorAll('.menu-option')];
+const footerActions=document.querySelector('.footer-actions');
+const pageHeader=document.querySelector('header');
+let menuOpen=false,currentScreen='home';
+function sizeMenu(){
+ menu.style.setProperty('--menu-height',Math.max(0,footerActions.getBoundingClientRect().top-18)+'px');
+}
+function setMenu(open){
+ menuOpen=open;sizeMenu();
+ menu.classList.toggle('open',open);menu.inert=!open;
+ menu.setAttribute('aria-hidden',String(!open));
+ menuToggle.setAttribute('aria-expanded',String(open));
+ menuToggle.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');
+ arena.inert=open;pageHeader.inert=open;
+ if(open){
+  for(const game of [shooter,bricks]){
+   if(game.pointer!==null&&game.canvas.hasPointerCapture(game.pointer))game.canvas.releasePointerCapture(game.pointer);
+   game.pointer=null;
+  }
+  menuOptions.find(option=>option.dataset.screen===currentScreen).focus({preventScroll:true});
+ }else menuToggle.focus({preventScroll:true});
+}
+function resetHome(){
+ stopPlans();cancelAnimationFrame(frame);frame=0;
+ for(const game of [shooter,bricks]){
+  game.active=false;game.pointer=null;game.root.hidden=true;cancelAnimationFrame(game.frame);
+ }
+ bodies.forEach((body,index)=>{
+  if(body.grab){clearTimeout(body.grab.timer);if(body.element.hasPointerCapture(body.grab.id))body.element.releasePointerCapture(body.grab.id);}
+  body.grab=null;body.deformation?.cancel();body.deformation=null;
+  for(const fragment of body.fragments)fragment.remove();body.fragments.clear();
+  body.active=index===0;body.burst=false;body.inflation=0;body.targetSpeed=0;body.suppressUntil=0;
+  body.vx=index?-92:92;body.vy=index?74:-74;body.hue=index*120;
+  body.image.src=originalGroupSource;body.image.style.visibility='';
+  body.image.style.filter=index?`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`:'';
+  body.element.classList.remove('dragging');body.element.style.pointerEvents='';body.element.removeAttribute('tabindex');
+  body.element.setAttribute('aria-label','Inflar figura');body.element.hidden=index!==0;
+  body.x=maxX*(index?.78:.22);body.y=maxY*(index?.65:.35);
+ });
+ paint();resize();
+}
+menuToggle.addEventListener('click',()=>setMenu(!menuOpen));
+for(const option of menuOptions)option.addEventListener('click',()=>{
+ currentScreen=option.dataset.screen;
+ for(const item of menuOptions){
+  const selected=item===option;item.classList.toggle('selected',selected);
+  if(selected)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');
+ }
+ setMenu(false);
+ if(currentScreen==='home')resetHome();else openGame(currentScreen==='bricks'?bricks:shooter);
+});
+document.addEventListener('keydown',event=>{
+ if(!menuOpen)return;
+ if(event.key==='Escape'){event.preventDefault();setMenu(false);}
+ if(event.key==='Tab'){
+  const focusable=[...menuOptions,menuToggle],index=focusable.indexOf(document.activeElement);
+  event.preventDefault();focusable[(index+(event.shiftKey?-1:1)+focusable.length)%focusable.length].focus({preventScroll:true});
+ }
+});
+new ResizeObserver(sizeMenu).observe(footerActions);
+window.addEventListener('resize',sizeMenu);
 
 function tapArena(event){
  if(!started||shooter.active||bricks?.active||event.target!==arena)return;
@@ -289,9 +348,6 @@ loading.addEventListener('keydown',event=>{
  if(loaded&&(event.key==='Enter'||event.key===' ')){event.preventDefault();enter();}
 });
 document.getElementById('presave').addEventListener('click',()=>{
- if(started&&++presaveTaps===10){
-  presaveTaps=0;document.getElementById('notice').hidden=true;openGame(shooter);return;
- }
  if(PRESAVE_URL){window.location.assign(PRESAVE_URL);}else{document.getElementById('notice').hidden=false;}
 });
 

@@ -35,3 +35,27 @@ html,body{touch-action:manipulation}
 .bricks-restart svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .bricks-restart:active{transform:scale(.9)}
 .bricks-restart:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+/* The footer pair remains centered; the panel stops above it. */
+.footer-actions{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:596px}
+.footer-actions #presave{flex:1;min-width:0}
+#menu-toggle{display:grid;place-items:center;flex:0 0 44px;width:44px;height:52px;padding:8px;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
+#menu-toggle svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+#menu-toggle:focus-visible,.menu-option:focus-visible{outline:2px solid currentColor;outline-offset:4px;border-radius:4px}
+.site-menu{position:fixed;top:0;left:0;right:0;height:var(--menu-height,70dvh);z-index:3;background:#000;display:grid;place-items:center;transform:translateY(-100%);visibility:hidden;transition:transform .42s cubic-bezier(.22,.7,.25,1),visibility 0s .42s}
+.site-menu.open{transform:translateY(0);visibility:visible;transition:transform .42s cubic-bezier(.22,.7,.25,1),visibility 0s}
+.site-menu::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:min(240px,55vw);height:2px;background:#fff}
+.menu-options{display:flex;flex-direction:column;gap:clamp(12px,4dvh,32px);padding:max(20px,env(safe-area-inset-top)) 20px 24px}
+.menu-option{display:flex;align-items:center;gap:22px;padding:8px 12px;min-height:64px;border:0;background:transparent;color:#fff;font-size:clamp(23px,6vw,32px);text-align:left;cursor:pointer}
+.menu-option.selected{color:#fa8429}
+.menu-icon{display:block;position:relative;width:64px;height:64px;flex:none}
+.menu-icon svg{position:absolute;inset:0;width:100%;height:100%}
+.menu-icon,.menu-icon svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.menu-icon text{fill:currentColor;stroke:none;font:18px Sentient,serif;text-anchor:middle}
+.menu-face{position:absolute;display:block;background:currentColor;mask:url("Grupo%204.png") center/contain no-repeat;-webkit-mask:url("Grupo%204.png") center/contain no-repeat}
+.face-small{width:19px;height:15px}
+.face-one{left:0;top:43px}.face-two{left:12px;top:53px}
+.face-large{width:27px;height:22px}
+.face-launch{left:1px;top:43px}.face-target{right:0;top:1px}
+@media(max-width:380px){.footer-actions{gap:6px}#presave{gap:9px;padding:12px}#presave img{width:38px;height:38px}#menu-toggle{flex-basis:40px;width:40px}}
+@media(prefers-reduced-motion:reduce){.site-menu,.site-menu.open{transition:none}}

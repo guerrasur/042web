@@ -27,7 +27,13 @@
 </div></header>
 <audio id="audio" preload="auto"></audio>
 <div class="arena" id="arena"><button id="group" type="button" aria-label="Inflar figura"><img id="group-image" src="Grupo%204.png" alt="" draggable="false"></button></div>
-<footer><button id="presave" type="button"><img src="sun.svg" alt="" aria-hidden="true"><span>Pre-guardá "Meditación Guiada Para Perros"</span></button><p id="notice" role="status" hidden>El preguardado estará disponible próximamente.</p></footer>
+<nav class="site-menu" id="site-menu" aria-label="Navegación principal" inert aria-hidden="true">
+<div class="menu-options">
+<button class="menu-option selected" data-screen="home" type="button" aria-current="page"><svg class="menu-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 29 32 10l22 19M16 25v29h12V38h8v16h12V25"/></svg><span>casa</span></button>
+<button class="menu-option" data-screen="bricks" type="button"><span class="menu-icon game-icon tang-icon" aria-hidden="true"><i class="menu-face face-small face-one"></i><i class="menu-face face-small face-two"></i><svg viewBox="0 0 64 64"><path d="M31 4h29v29H31zM8 44l11-10M18 54l11-10"/><text x="45.5" y="25">42</text></svg></span><span>Bebé Tang</span></button>
+<button class="menu-option" data-screen="bubble" type="button"><span class="menu-icon game-icon bubble-icon" aria-hidden="true"><i class="menu-face face-large face-launch"></i><i class="menu-face face-large face-target"></i><svg viewBox="0 0 64 64"><path d="m24 40 9-9m-9 0h9v9"/></svg></span><span>Bubushoter</span></button>
+</div></nav>
+<footer><div class="footer-actions"><button id="menu-toggle" type="button" aria-label="Abrir menú" aria-controls="site-menu" aria-expanded="false"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 6h22M3 14h22M3 22h22"/></svg></button><button id="presave" type="button"><img src="sun.svg" alt="" aria-hidden="true"><span>Pre-guardá "Meditación Guiada Para Perros"</span></button></div><p id="notice" role="status" hidden>El preguardado estará disponible próximamente.</p></footer>
 </main>
 <noscript><style>.loading{display:none}main{opacity:1}#group{left:50%;top:50%;transform:translate(-50%,-50%)}</style></noscript>
 </body>
