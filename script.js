@@ -23,13 +23,16 @@ let shooterTimer=null;
 let shooter=null;
 const colorTimers=[];
 const group=document.getElementById('group');
-const second=group.cloneNode(true);
-second.hidden=true;second.id='group-two';second.querySelector('img').id='group-image-two';arena.append(second);
-const bodies=[group,second].map((element,index)=>({element,image:element.querySelector('img'),
- x:0,y:0,vx:index?-92:92,vy:index?74:-74,targetSpeed:0,hue:index?190:0,
+const heads=[group];
+for(let i=1;i<3;i++){
+ const head=group.cloneNode(true);head.hidden=true;head.id=`group-${i+1}`;
+ head.querySelector('img').id=`group-image-${i+1}`;arena.append(head);heads.push(head);
+}
+const bodies=heads.map((element,index)=>({element,image:element.querySelector('img'),
+ x:0,y:0,vx:index?-92:92,vy:index?74:-74,targetSpeed:0,hue:index*120,
  active:index===0,inflation:0,burst:false,grab:null,suppressUntil:0,fragments:new Set(),deformation:null}));
 function tint(body){body.hue=(body.hue+70+Math.random()*140)%360;body.image.style.filter=`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`;}
-bodies[1].image.style.filter='sepia(1) saturate(8) hue-rotate(190deg) brightness(.95)';
+for(const body of bodies.slice(1))body.image.style.filter=`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`;
 function paint(){for(const b of bodies)b.element.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;}
 function snapshot(){return bodies.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,targetSpeed:b.targetSpeed,active:b.active,burst:b.burst,held:Boolean(b.grab)}));}
 function apply(states){states.forEach((s,i)=>{for(const key of ['x','y','vx','vy','targetSpeed'])bodies[i][key]=s[key];});}
@@ -45,7 +48,7 @@ function wall(b){
 function physics(states,dt){
  const hits=new Set();
  states.forEach((b,i)=>{
-  if(!b.active||b.held)return;
+  if(!b.active||b.burst||b.held)return;
   if(b.targetSpeed){
    const speed=Math.hypot(b.vx,b.vy);
    if(speed){const eased=b.targetSpeed+(speed-b.targetSpeed)*Math.exp(-3.5*dt);b.vx*=eased/speed;b.vy*=eased/speed;}
@@ -53,7 +56,8 @@ function physics(states,dt){
   b.x+=b.vx*dt;b.y+=b.vy*dt;
   if(wall(b))hits.add(i);
  });
- const [a,b]=states;
+ for(let i=0;i<states.length;i++)for(let j=i+1;j<states.length;j++){
+ const a=states[i],b=states[j];
  if(a.active&&b.active&&!a.burst&&!b.burst&&!(a.held&&b.held)){
   const dx=b.x-a.x,dy=b.y-a.y,distance=Math.hypot(dx,dy),diameter=radius*2;
   if(distance<diameter){
@@ -67,7 +71,7 @@ function physics(states,dt){
     const impulse=-relative*(a.held||b.held?1.85:1);
     if(!a.held){a.vx-=impulse*nx;a.vy-=impulse*ny;}
     if(!b.held){b.vx+=impulse*nx;b.vy+=impulse*ny;}
-    hits.add(0);hits.add(1);
+    hits.add(i);hits.add(j);
    }
    for(const body of states)if(!body.held){
     wall(body);
@@ -75,6 +79,7 @@ function physics(states,dt){
     if(speed>1800){body.vx*=1800/speed;body.vy*=1800/speed;}
    }
   }
+ }
  }
  return hits;
 }
@@ -89,7 +94,7 @@ function stopPlans(){
  for(const timer of colorTimers)clearTimeout(timer);colorTimers.length=0;
 }
 function playPlans(){
- const states=snapshot(),frames=[[],[]];planStates=[states.map(s=>({...s}))];
+ const states=snapshot(),frames=bodies.map(()=>[]);planStates=[states.map(s=>({...s}))];
  for(let i=0;i<=480;i++){
   if(i){
    const hits=physics(states,1/120);
@@ -153,13 +158,9 @@ function expandCenter(level){
  context.putImageData(output,0,0);const source=canvas.toDataURL('image/png');deformationSources.set(level,source);return source;
 }
 function inflate(body){
- if(!started||!body.active||shooter?.active)return;clearTimeout(shooterTimer);stopPlans();body.deformation?.cancel();
- if(body.burst){
-  body.burst=false;body.inflation=0;
-  for(const fragment of body.fragments)fragment.remove();body.fragments.clear();
-  body.vx=(Math.sign(body.vx)||1)*92;body.vy=(Math.sign(body.vy)||1)*74;body.targetSpeed=0;body.image.style.visibility='';
- }else if(body.inflation===3){
-  body.burst=true;body.image.style.visibility='hidden';body.element.setAttribute('aria-label','Volver a mostrar figura');
+ if(!started||!body.active||body.burst||shooter?.active)return;clearTimeout(shooterTimer);stopPlans();body.deformation?.cancel();
+ if(body.inflation===3){
+  body.burst=true;body.image.style.visibility='hidden';body.element.style.pointerEvents='none';body.element.tabIndex=-1;
   if(!reducedMotion.matches){
    const width=body.element.clientWidth,height=body.element.clientHeight;
    for(let row=0;row<4;row++)for(let col=0;col<4;col++){
@@ -170,8 +171,8 @@ function inflate(body){
     animation.onfinish=()=>{fragment.remove();body.fragments.delete(fragment);};
    }
   }
-  if(bodies.every(b=>!b.active||b.burst))shooterTimer=setTimeout(()=>{
-   if(!bodies.every(b=>!b.active||b.burst)||shooter?.active)return;
+  if(bodies.every(b=>b.burst))shooterTimer=setTimeout(()=>{
+   if(!bodies.every(b=>b.burst)||shooter?.active)return;
    stopPlans();cancelAnimationFrame(frame);
    for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
    shooter.start();
@@ -203,7 +204,7 @@ function finishGrab(body,event){
 for(const body of bodies){
  body.image.addEventListener('load',resize);
  body.element.addEventListener('pointerdown',event=>{
-  if(!started||!body.active||body.grab||event.button!==0)return;
+  if(!started||!body.active||body.burst||body.grab||event.button!==0)return;
   stopPlans();const rect=arena.getBoundingClientRect();
   const grab=body.grab={id:event.pointerId,left:rect.left,top:rect.top,offsetX:event.clientX-rect.left-body.x,offsetY:event.clientY-rect.top-body.y,
    startX:event.clientX,startY:event.clientY,previousX:event.clientX,previousY:event.clientY,savedVx:body.vx,savedVy:body.vy,time:performance.now(),vx:0,vy:0,targetX:body.x,targetY:body.y,dragging:false,timer:null};
@@ -223,20 +224,20 @@ for(const body of bodies){
  });
  for(const name of ['pointerup','pointercancel','lostpointercapture'])body.element.addEventListener(name,event=>{event.stopPropagation();finishGrab(body,event);});
  for(const name of ['contextmenu','dragstart'])body.element.addEventListener(name,event=>event.preventDefault());
- body.element.addEventListener('click',event=>{event.stopPropagation();if(event.detail!==0&&performance.now()<body.suppressUntil)return;inflate(body);});
+ body.element.addEventListener('click',event=>{event.stopPropagation();if(performance.now()<body.suppressUntil)return;inflate(body);});
 }
 shooter=new window.FaceShooter(arena,originalGroupSource);
 function tapArena(event){
  if(!started||shooter.active||event.target!==arena)return;
- const other=bodies[1];
- if(!other.active){
+ const other=bodies.find(body=>!body.active);
+ if(other){
   stopPlans();
   const rect=arena.getBoundingClientRect();
   other.x=Math.max(0,Math.min(maxX,event.clientX-rect.left-group.clientWidth/2));
   other.y=Math.max(0,Math.min(maxY,event.clientY-rect.top-group.clientHeight/2));
   other.active=true;other.element.hidden=false;paint();resume();return;
  }
- for(const body of bodies)if(body.active&&body.burst)inflate(body);
+
 }
 let arenaTouch=null,arenaClickUntil=0;
 arena.addEventListener('pointerdown',event=>{
@@ -253,7 +254,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture'])arena.addEv
  if(arena.hasPointerCapture(event.pointerId))arena.releasePointerCapture(event.pointerId);
  if(name==='pointerup'&&!touch.moved)tapArena(event);
 });
-arena.addEventListener('click',event=>{if(event.detail!==0&&performance.now()<arenaClickUntil)return;tapArena(event);});
+arena.addEventListener('click',event=>{if(performance.now()<arenaClickUntil)return;tapArena(event);});
 document.addEventListener('selectstart',event=>event.preventDefault());
 new ResizeObserver(resize).observe(arena);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)for(const b of bodies)if(b.grab)finishGrab(b,{pointerId:b.grab.id,type:'pointercancel'});resume();});
