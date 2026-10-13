@@ -1,5 +1,8 @@
 'use strict';
 // Ballz-style volleys. Every projectile uses the same cached colored PNG sprites.
+// Ordered from cool blue-gray through green and olive to warm beige.
+const BRICKS_GUIDE_PALETTE=['141619','151d1f','182622','212218','baad91']
+ .map(hex=>[0,2,4].map(offset=>parseInt(hex.slice(offset,offset+2),16)));
 class FaceBricks extends FaceShooter {
  constructor(arena,source){
   super(arena,source);this.root.classList.add('face-bricks');
@@ -183,13 +186,20 @@ class FaceBricks extends FaceShooter {
   });
   dots.sort((a,b)=>a.distance-b.distance);
   const total=lengths.at(-1);
-  for(const dot of dots)dot.hue=total?240*(1-dot.distance/total):0;
+  for(const dot of dots)dot.color=this.guideColor(total?dot.distance/total:0);
   return dots;
+ }
+ guideColor(progress){
+  const position=Math.max(0,Math.min(1,progress))*(BRICKS_GUIDE_PALETTE.length-1);
+  const index=Math.min(BRICKS_GUIDE_PALETTE.length-2,Math.floor(position)),t=position-index;
+  const start=BRICKS_GUIDE_PALETTE[index],end=BRICKS_GUIDE_PALETTE[index+1];
+  const rgb=start.map((channel,i)=>Math.round(channel+(end[i]-channel)*t));
+  return `rgb(${rgb.join(',')})`;
  }
  drawTrajectory(){
   const c=this.ctx;c.save();
   for(const dot of this.guideDots()){
-   c.fillStyle=`hsla(${dot.hue},90%,65%,.85)`;c.beginPath();c.arc(dot.x,dot.y,dot.radius,0,Math.PI*2);c.fill();
+   c.fillStyle=dot.color;c.beginPath();c.arc(dot.x,dot.y,dot.radius,0,Math.PI*2);c.fill();
   }
   c.restore();
  }
