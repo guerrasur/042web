@@ -170,8 +170,8 @@ function inflate(body){
     animation.onfinish=()=>{fragment.remove();body.fragments.delete(fragment);};
    }
   }
-  if(bodies.every(b=>b.active&&b.burst))shooterTimer=setTimeout(()=>{
-   if(!bodies.every(b=>b.active&&b.burst)||shooter?.active)return;
+  if(bodies.every(b=>!b.active||b.burst))shooterTimer=setTimeout(()=>{
+   if(!bodies.every(b=>!b.active||b.burst)||shooter?.active)return;
    stopPlans();cancelAnimationFrame(frame);
    for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
    shooter.start();
