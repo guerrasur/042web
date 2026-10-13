@@ -365,7 +365,7 @@ setTimeout(()=>{entranceMinimumElapsed=true;syncEntrance();},3000);
 syncEntrance();
 
 // Replaced with the commit SHA by the Pages build, for every deployment.
-const BUILD_VERSION='efdcf92c5540623178f7ad97b4bc46424b854d0a';
+const BUILD_VERSION='a697a3f5ed991bf8918d38636ab5c1bff630211b';
 let checkingUpdate=false;
 async function checkForUpdate(){
  if(checkingUpdate||document.hidden||BUILD_VERSION.startsWith('__'))return;

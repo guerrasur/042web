@@ -5,6 +5,13 @@ class FaceBricks extends FaceShooter {
   super(arena,source);this.root.classList.add('face-bricks');
   this.root.querySelector('.shooter-hud').remove();
   this.root.querySelector('.shooter-hint').remove();
+  const restart=this.result.querySelector('button');restart.classList.add('bricks-restart');
+  restart.setAttribute('aria-label','Jugar de nuevo');restart.title='Jugar de nuevo';
+  restart.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>';
+  this.recordLabel=document.createElement('p');this.recordLabel.className='bricks-record';this.result.insertBefore(this.recordLabel,restart);
+  this.record=0;
+  try{const saved=Number(localStorage.getItem('042-bricks-record'));if(Number.isSafeInteger(saved)&&saved>=0)this.record=saved;}catch{}
+
   this.canvas.setAttribute('aria-label','Dispará las caras contra los bloques numerados. Arrastrá para apuntar y soltá para disparar.');
  }
  resize(){
@@ -64,7 +71,15 @@ class FaceBricks extends FaceShooter {
   this.addRow();this.descent=.32;
   this.updateScore();
  }
- lose(){this.over=true;this.shot=null;this.balls=[];this.result.hidden=false;this.result.querySelector('p').textContent=`Fin del juego · ${this.destroyed} bloques · ${this.count} caras`;}
+ lose(){
+  this.over=true;this.shot=null;this.balls=[];
+  this.record=Math.max(this.record||0,this.count);
+  try{localStorage.setItem('042-bricks-record',String(this.record));}catch{}
+  this.result.querySelector('p').textContent=`Wachos recolectados: ${this.count}`;
+  this.recordLabel.textContent=`Record: ${this.record}`;
+  this.result.hidden=false;
+ }
+
  step(dt){
   if(this.descent>0){
    this.descent=Math.max(0,this.descent-dt);

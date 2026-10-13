@@ -30,3 +30,11 @@ html,body{touch-action:manipulation}
 
 #bricks-play{margin:8px 0 0;background:transparent;border:1px solid #555;border-radius:12px;padding:9px 14px;min-height:40px;color:#ddd;font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
 #bricks-play:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+.face-bricks .shooter-result{gap:12px;padding:20px}
+.face-bricks .shooter-result p{margin:0;font-size:clamp(17px,4.5vw,23px)}
+.face-bricks .shooter-result .bricks-record{color:#999;font-size:15px}
+.face-bricks .shooter-result .bricks-restart{display:grid;place-items:center;width:56px;height:56px;padding:12px;margin-top:8px;border:0;border-radius:50%;background:transparent}
+.bricks-restart svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bricks-restart:active{transform:scale(.9)}
+.bricks-restart:focus-visible{outline:2px solid #fff;outline-offset:3px}
