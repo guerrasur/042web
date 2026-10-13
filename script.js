@@ -24,14 +24,14 @@ let shooter=null;
 const colorTimers=[];
 const group=document.getElementById('group');
 const second=group.cloneNode(true);
-second.id='group-two';second.querySelector('img').id='group-image-two';arena.append(second);
+second.hidden=true;second.id='group-two';second.querySelector('img').id='group-image-two';arena.append(second);
 const bodies=[group,second].map((element,index)=>({element,image:element.querySelector('img'),
  x:0,y:0,vx:index?-92:92,vy:index?74:-74,targetSpeed:0,hue:index?190:0,
- inflation:0,burst:false,grab:null,suppressUntil:0,fragments:new Set(),deformation:null}));
+ active:index===0,inflation:0,burst:false,grab:null,suppressUntil:0,fragments:new Set(),deformation:null}));
 function tint(body){body.hue=(body.hue+70+Math.random()*140)%360;body.image.style.filter=`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`;}
 bodies[1].image.style.filter='sepia(1) saturate(8) hue-rotate(190deg) brightness(.95)';
 function paint(){for(const b of bodies)b.element.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;}
-function snapshot(){return bodies.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,targetSpeed:b.targetSpeed,burst:b.burst,held:Boolean(b.grab)}));}
+function snapshot(){return bodies.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,targetSpeed:b.targetSpeed,active:b.active,burst:b.burst,held:Boolean(b.grab)}));}
 function apply(states){states.forEach((s,i)=>{for(const key of ['x','y','vx','vy','targetSpeed'])bodies[i][key]=s[key];});}
 function wall(b){
  let hit=false;
@@ -45,7 +45,7 @@ function wall(b){
 function physics(states,dt){
  const hits=new Set();
  states.forEach((b,i)=>{
-  if(b.held)return;
+  if(!b.active||b.held)return;
   if(b.targetSpeed){
    const speed=Math.hypot(b.vx,b.vy);
    if(speed){const eased=b.targetSpeed+(speed-b.targetSpeed)*Math.exp(-3.5*dt);b.vx*=eased/speed;b.vy*=eased/speed;}
@@ -54,7 +54,7 @@ function physics(states,dt){
   if(wall(b))hits.add(i);
  });
  const [a,b]=states;
- if(!a.burst&&!b.burst&&!(a.held&&b.held)){
+ if(a.active&&b.active&&!a.burst&&!b.burst&&!(a.held&&b.held)){
   const dx=b.x-a.x,dy=b.y-a.y,distance=Math.hypot(dx,dy),diameter=radius*2;
   if(distance<diameter){
    const nx=distance>.001?dx/distance:1,ny=distance>.001?dy/distance:0;
@@ -153,7 +153,7 @@ function expandCenter(level){
  context.putImageData(output,0,0);const source=canvas.toDataURL('image/png');deformationSources.set(level,source);return source;
 }
 function inflate(body){
- if(!started||shooter?.active)return;clearTimeout(shooterTimer);stopPlans();body.deformation?.cancel();
+ if(!started||!body.active||shooter?.active)return;clearTimeout(shooterTimer);stopPlans();body.deformation?.cancel();
  if(body.burst){
   body.burst=false;body.inflation=0;
   for(const fragment of body.fragments)fragment.remove();body.fragments.clear();
@@ -170,8 +170,8 @@ function inflate(body){
     animation.onfinish=()=>{fragment.remove();body.fragments.delete(fragment);};
    }
   }
-  if(bodies.every(b=>b.burst))shooterTimer=setTimeout(()=>{
-   if(!bodies.every(b=>b.burst)||shooter?.active)return;
+  if(bodies.every(b=>b.active&&b.burst))shooterTimer=setTimeout(()=>{
+   if(!bodies.every(b=>b.active&&b.burst)||shooter?.active)return;
    stopPlans();cancelAnimationFrame(frame);
    for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
    shooter.start();
@@ -201,7 +201,7 @@ function finishGrab(body,event){
 for(const body of bodies){
  body.image.addEventListener('load',resize);
  body.element.addEventListener('pointerdown',event=>{
-  if(!started||body.burst||body.grab||event.button!==0)return;
+  if(!started||!body.active||body.burst||body.grab||event.button!==0)return;
   stopPlans();const rect=arena.getBoundingClientRect();
   const grab=body.grab={id:event.pointerId,left:rect.left,top:rect.top,offsetX:event.clientX-rect.left-body.x,offsetY:event.clientY-rect.top-body.y,
    startX:event.clientX,startY:event.clientY,previousX:event.clientX,previousY:event.clientY,savedVx:body.vx,savedVy:body.vy,time:performance.now(),vx:0,vy:0,targetX:body.x,targetY:body.y,dragging:false,timer:null};
@@ -224,7 +224,19 @@ for(const body of bodies){
  body.element.addEventListener('click',event=>{event.stopPropagation();if(event.detail!==0&&performance.now()<body.suppressUntil)return;inflate(body);});
 }
 shooter=new window.FaceShooter(arena,originalGroupSource);
-arena.addEventListener('click',()=>{if(shooter.active)return;for(const body of bodies)if(body.burst)inflate(body);});
+arena.addEventListener('click',event=>{
+ if(!started||shooter.active||event.target!==arena)return;
+ const other=bodies[1];
+ if(!other.active){
+  stopPlans();
+  const rect=arena.getBoundingClientRect();
+  other.x=Math.max(0,Math.min(maxX,event.clientX-rect.left-group.clientWidth/2));
+  other.y=Math.max(0,Math.min(maxY,event.clientY-rect.top-group.clientHeight/2));
+  other.active=true;other.element.hidden=false;paint();resume();return;
+ }
+ for(const body of bodies)if(body.active&&body.burst)inflate(body);
+});
+document.addEventListener('selectstart',event=>event.preventDefault());
 new ResizeObserver(resize).observe(arena);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)for(const b of bodies)if(b.grab)finishGrab(b,{pointerId:b.grab.id,type:'pointercancel'});resume();});
 reducedMotion.addEventListener('change',()=>{resize();resume();});
