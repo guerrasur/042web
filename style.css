@@ -64,3 +64,6 @@ html,body{touch-action:manipulation}
 .face-launch{right:1px;top:43px}.face-target{left:0;top:1px}
 @media(max-width:380px){.footer-actions{gap:6px}#presave{gap:9px;padding:12px}#presave img{width:38px;height:38px}#menu-toggle{flex-basis:40px;width:40px}}
 @media(prefers-reduced-motion:reduce){.site-menu,.site-menu.open{transition:none}}
+
+/* Reserve a fourth row so the three menu choices sit above center. */
+.menu-options::after{content:"";display:block;height:min(80px,10dvh);flex:none}

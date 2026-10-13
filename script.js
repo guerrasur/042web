@@ -288,6 +288,10 @@ menuToggle.addEventListener('click',()=>{
  setMenu(!menuOpen);
 });
 for(const option of menuOptions)option.addEventListener('click',()=>{
+ if(option.dataset.screen==='music'){
+  audio.pause();syncPlayer();setMenu(false);
+  window.location.assign('https://0051.bandcamp.com/');return;
+ }
  currentScreen=option.dataset.screen;
  for(const item of menuOptions){
   const selected=item===option;item.classList.toggle('selected',selected);
