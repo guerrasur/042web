@@ -13,3 +13,12 @@ header .album{font-size:clamp(12px,3.2vw,15px);font-weight:300;line-height:1.4;o
 .entrance-content{position:relative;line-height:0}.entrance-hint{position:absolute;top:100%;left:50%;transform:translateX(-50%);width:max-content;max-width:90vw;margin:24px 0 0;font-size:clamp(17px,4.5vw,22px);font-weight:300;line-height:1.4;text-align:center;opacity:0;transition:opacity 3s ease;pointer-events:none}.entrance-hint.visible{opacity:.4}@media(prefers-reduced-motion:reduce){.entrance-hint{transition:none}}
 
 :is(#group,#group-two).dragging{cursor:grabbing}
+
+:is(#group,#group-two)[hidden],.face-shooter[hidden],.shooter-result[hidden]{display:none}
+.face-shooter{position:absolute;inset:0;display:flex;flex-direction:column;background:#000;color:#fff}
+.shooter-hud{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px 6px;font-size:13px;flex:none}
+.shooter-hud button,.shooter-result button{background:transparent;color:#fff;border:1px solid #666;border-radius:12px;min-height:40px;padding:8px 12px;font:inherit;cursor:pointer;touch-action:manipulation}
+.face-shooter canvas{display:block;flex:1;min-height:0;width:100%;touch-action:none;-webkit-touch-callout:none;outline:none}
+.face-shooter canvas:focus-visible{outline:1px dashed #777;outline-offset:-2px}
+.shooter-hint{font-size:12px;opacity:.5;text-align:center;margin:6px 12px 0;flex:none;pointer-events:none}
+.shooter-result{position:absolute;inset:44px 0 20px;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;background:rgba(0,0,0,.8);text-align:center}
