@@ -1,14 +1,13 @@
 'use strict';
 // Hidden Bubble Shooter, using the site's PNG for every game piece.
 class FaceShooter {
- constructor(arena,source,onExit){
-  this.arena=arena;this.source=source;this.onExit=onExit;this.active=false;this.frame=0;
-  this.hues=[0,95,190,285];this.sprites=[];
+ constructor(arena,source){
+  this.arena=arena;this.source=source;this.active=false;this.frame=0;
+  this.palette=[[255,94,110],[108,232,124],[86,186,255],[213,132,255]];this.sprites=[];
   this.root=document.createElement('section');this.root.className='face-shooter';this.root.hidden=true;
-  this.root.innerHTML='<div class="shooter-hud"><span class="shooter-score" aria-live="polite">0</span><button type="button" class="shooter-exit">Volver a las caras</button></div><canvas tabindex="0" aria-label="Uní tres caras del mismo color. Arrastrá para apuntar y soltá para disparar."></canvas><p class="shooter-hint">Arrastrá para apuntar · Soltá para disparar</p><div class="shooter-result" hidden><p></p><button type="button">Jugar de nuevo</button></div>';
+  this.root.innerHTML='<div class="shooter-hud"><span class="shooter-score" aria-live="polite">0</span></div><canvas tabindex="0" aria-label="Uní tres caras del mismo color. Arrastrá para apuntar y soltá para disparar."></canvas><p class="shooter-hint">Arrastrá para apuntar · Soltá para disparar</p><div class="shooter-result" hidden><p></p><button type="button">Jugar de nuevo</button></div>';
   arena.append(this.root);this.canvas=this.root.querySelector('canvas');this.ctx=this.canvas.getContext('2d');
   this.scoreLabel=this.root.querySelector('.shooter-score');this.result=this.root.querySelector('.shooter-result');
-  this.root.querySelector('.shooter-exit').addEventListener('click',()=>this.exit());
   this.result.querySelector('button').addEventListener('click',()=>this.reset());
   this.canvas.addEventListener('pointerdown',e=>{
    if(this.shot||this.over||this.pointer!==null||e.button!==0)return;
@@ -34,15 +33,25 @@ class FaceShooter {
  prepareSprites(){
   if(this.sprites.length)return;
   const image=new Image();image.src=this.source;
-  const ready=()=>{this.sprites=this.hues.map(hue=>{
-   const sprite=document.createElement('canvas');sprite.width=128;sprite.height=100;
-   const context=sprite.getContext('2d');context.filter=`sepia(1) saturate(8) hue-rotate(${hue}deg) brightness(1.1)`;
-   context.drawImage(image,0,0,128,100);return sprite;
-  });};
+  const ready=()=>{
+   const base=document.createElement('canvas');base.width=128;base.height=100;
+   const context=base.getContext('2d');context.drawImage(image,0,0,128,100);
+   const original=context.getImageData(0,0,128,100);
+   // Bake RGB colors into pixels: no Canvas filter support is required on iOS.
+   this.sprites=this.palette.map(color=>{
+    const sprite=document.createElement('canvas');sprite.width=128;sprite.height=100;
+    const target=sprite.getContext('2d'),pixels=target.createImageData(128,100);
+    for(let i=0;i<original.data.length;i+=4){
+     const shade=(original.data[i]+original.data[i+1]+original.data[i+2])/765;
+     pixels.data[i]=color[0]*shade;pixels.data[i+1]=color[1]*shade;pixels.data[i+2]=color[2]*shade;
+     pixels.data[i+3]=original.data[i+3];
+    }
+    target.putImageData(pixels,0,0);return sprite;
+   });
+  };
   if(image.complete&&image.naturalWidth)ready();else image.onload=ready;
  }
  start(){this.active=true;this.root.hidden=false;this.prepareSprites();this.resize();this.reset();this.canvas.focus({preventScroll:true});}
- exit(){this.active=false;cancelAnimationFrame(this.frame);this.frame=0;this.pointer=null;this.root.hidden=true;this.onExit();}
  resize(){
   const oldSize=this.size||1,oldLaunchX=this.launchX||0,oldLaunchY=this.launchY||0;this.width=this.canvas.clientWidth;this.height=this.canvas.clientHeight;
   const ratio=Math.min(window.devicePixelRatio||1,2);this.canvas.width=Math.round(this.width*ratio);this.canvas.height=Math.round(this.height*ratio);this.ctx.setTransform(ratio,0,0,ratio,0,0);
@@ -59,7 +68,7 @@ class FaceShooter {
  }
  seed(){for(let row=0;row<3;row++)this.makeRow(row);}
  makeRow(row){let color=this.randomColor();for(let col=0;col<this.cols-((row+this.shift)%2);col++){if(col%2===0)color=this.randomColor();this.cells.push({row,col,color});}}
- randomColor(){return Math.floor(Math.random()*this.hues.length);}
+ randomColor(){return Math.floor(Math.random()*this.palette.length);}
  pick(){const colors=[...new Set(this.cells.map(c=>c.color))];return colors.length?colors[Math.floor(Math.random()*colors.length)]:this.randomColor();}
  position(cell){return {x:this.left+this.size*(cell.col+.5+((cell.row+this.shift)%2)*.5),y:this.size*.55+cell.row*this.rowHeight};}
  neighbors(cell){const odd=(cell.row+this.shift)%2;return [[cell.row,cell.col-1],[cell.row,cell.col+1],[cell.row-1,cell.col+(odd?0:-1)],[cell.row-1,cell.col+(odd?1:0)],[cell.row+1,cell.col+(odd?0:-1)],[cell.row+1,cell.col+(odd?1:0)]];}

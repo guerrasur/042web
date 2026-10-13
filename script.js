@@ -223,10 +223,7 @@ for(const body of bodies){
  for(const name of ['contextmenu','dragstart'])body.element.addEventListener(name,event=>event.preventDefault());
  body.element.addEventListener('click',event=>{event.stopPropagation();if(event.detail!==0&&performance.now()<body.suppressUntil)return;inflate(body);});
 }
-shooter=new window.FaceShooter(arena,originalGroupSource,()=>{
- for(const body of bodies){body.element.hidden=false;if(body.burst)inflate(body);}
- resize();
-});
+shooter=new window.FaceShooter(arena,originalGroupSource);
 arena.addEventListener('click',()=>{if(shooter.active)return;for(const body of bodies)if(body.burst)inflate(body);});
 new ResizeObserver(resize).observe(arena);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)for(const b of bodies)if(b.grab)finishGrab(b,{pointerId:b.grab.id,type:'pointercancel'});resume();});
