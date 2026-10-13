@@ -21,6 +21,7 @@ let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
 let plans=null,planStates=null;
 let shooterTimer=null;
 let shooter=null;
+let bricks=null,returnToShooter=false;
 const colorTimers=[];
 const group=document.getElementById('group');
 const heads=[group];
@@ -118,7 +119,7 @@ function animate(now){
 }
 function resume(){
  cancelAnimationFrame(frame);frame=0;last=0;stopPlans();
- if(!started||document.hidden||shooter?.active)return;
+ if(!started||document.hidden||shooter?.active||bricks?.active)return;
  if(bodies.some(b=>b.grab)){frame=requestAnimationFrame(animate);return;}
  if(!reducedMotion.matches)playPlans();
 }
@@ -172,7 +173,7 @@ function inflate(body){
    }
   }
   if(bodies.every(b=>b.burst))shooterTimer=setTimeout(()=>{
-   if(!bodies.every(b=>b.burst)||shooter?.active)return;
+   if(!bodies.every(b=>b.burst)||shooter?.active||bricks?.active)return;
    stopPlans();cancelAnimationFrame(frame);
    for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
    shooter.start();
@@ -227,8 +228,26 @@ for(const body of bodies){
  body.element.addEventListener('click',event=>{event.stopPropagation();if(performance.now()<body.suppressUntil)return;inflate(body);});
 }
 shooter=new window.FaceShooter(arena,originalGroupSource);
+bricks=new window.FaceBricks(arena,originalGroupSource);
+const bricksButton=document.getElementById('bricks-play');
+bricksButton.addEventListener('click',()=>{
+ if(!started)return;
+ if(bricks.active){
+  bricks.active=false;cancelAnimationFrame(bricks.frame);bricks.root.hidden=true;bricks.pointer=null;
+  bricksButton.textContent='Jugar a los bloques';
+  if(returnToShooter||bodies.every(b=>b.burst)){
+   shooter.active=true;shooter.root.hidden=false;
+   if(!shooter.cells)shooter.start();else{shooter.resize();shooter.loop();}
+  }else{for(const b of bodies)b.element.hidden=!b.active;resize();}
+ }else{
+  returnToShooter=shooter.active;shooter.active=false;shooter.root.hidden=true;cancelAnimationFrame(shooter.frame);
+  stopPlans();cancelAnimationFrame(frame);for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
+  bricks.start();bricksButton.textContent='Cerrar juego de bloques';
+ }
+});
+
 function tapArena(event){
- if(!started||shooter.active||event.target!==arena)return;
+ if(!started||shooter.active||bricks?.active||event.target!==arena)return;
  const other=bodies.find(body=>!body.active);
  if(other){
   stopPlans();

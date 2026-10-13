@@ -11,6 +11,7 @@
 <link rel="preload" as="font" href="fonts/Sentient-Light.woff2" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css?v=7">
 <script src="bubble.js?v=1" defer></script>
+<script src="bricks.js?v=1" defer></script>
 <script src="script.js?v=12" defer></script>
 </head>
 <body>
@@ -23,7 +24,7 @@
 <button id="previous" class="player-button" type="button" aria-label="Canción anterior" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h3v14H5zm14 0v14L9 12z"/></svg></button>
 <button id="play-pause" class="player-button" type="button" aria-label="Pausar" title="Audio todavía no disponible"><svg id="pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg><svg id="play-icon" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M7 4v16l14-8z"/></svg></button>
 <button id="next" class="player-button" type="button" aria-label="Próxima canción" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h3v14h-3zM5 5v14l10-7z"/></svg></button>
-</div></header>
+</div><button id="bricks-play" type="button">Jugar a los bloques</button></header>
 <audio id="audio" preload="auto"></audio>
 <div class="arena" id="arena"><button id="group" type="button" aria-label="Inflar figura"><img id="group-image" src="Grupo%204.png" alt="" draggable="false"></button></div>
 <footer><button id="presave" type="button"><img src="sun.svg" alt="" aria-hidden="true"><span>Pre-guardá "Meditación Guiada Para Perros"</span></button><p id="notice" role="status" hidden>El preguardado estará disponible próximamente.</p></footer>
