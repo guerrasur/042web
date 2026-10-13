@@ -52,10 +52,11 @@ html,body{touch-action:manipulation}
 .menu-icon svg{position:absolute;inset:0;width:100%;height:100%}
 .menu-icon,.menu-icon svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .menu-icon text{fill:currentColor;stroke:none;font:18px Sentient,serif;text-anchor:middle}
-.menu-face{position:absolute;display:block;background:currentColor;mask:url("Grupo%204.png") center/contain no-repeat;-webkit-mask:url("Grupo%204.png") center/contain no-repeat}
+.menu-face{position:absolute;display:block;object-fit:contain;filter:grayscale(1);pointer-events:none}
+.menu-option.selected .menu-face{filter:sepia(1) saturate(6) hue-rotate(345deg)}
 .face-small{width:19px;height:15px}
-.face-one{left:0;top:43px}.face-two{left:12px;top:53px}
+.face-one{right:0;top:43px}.face-two{right:12px;top:53px}
 .face-large{width:27px;height:22px}
-.face-launch{left:1px;top:43px}.face-target{right:0;top:1px}
+.face-launch{right:1px;top:43px}.face-target{left:0;top:1px}
 @media(max-width:380px){.footer-actions{gap:6px}#presave{gap:9px;padding:12px}#presave img{width:38px;height:38px}#menu-toggle{flex-basis:40px;width:40px}}
 @media(prefers-reduced-motion:reduce){.site-menu,.site-menu.open{transition:none}}
