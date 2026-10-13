@@ -20,7 +20,7 @@ class FaceBricks extends FaceShooter {
   if(!this.descent&&this.blocks?.some(b=>this.blockRect(b).y+this.tile>this.launchY-this.size))this.lose();
  }
  reset(){
-  this.blocks=[];this.balls=[];this.effects=[];this.collectionPulse=null;this.shot=null;this.pointer=null;
+  this.blocks=[];this.balls=[];this.effects=[];this.shot=null;this.pointer=null;
   this.angle=-Math.PI/2;this.count=5;this.turn=1;this.destroyed=0;this.pending=0;this.emitted=0;this.returned=0;
   this.color=0;this.volleyColor=0;this.descent=0;this.over=false;this.last=0;this.elapsed=0;this.landing=null;this.launchX=this.width/2;this.result.hidden=true;
   this.addRow();this.updateScore();this.loop();
@@ -85,12 +85,8 @@ class FaceBricks extends FaceShooter {
    this.balls=remaining;
    if(this.emitted===this.volleyCount&&!this.balls.length)this.nextTurn();
   }
-  if(this.collectionPulse){this.collectionPulse.age+=dt;if(this.collectionPulse.age>.3)this.collectionPulse=null;}
-  for(const e of this.effects){
-   e.age+=dt;
-   if(!e.collected&&e.age>=.72){e.collected=true;this.collectionPulse={age:0,color:e.color};}
-  }
-  this.effects=this.effects.filter(e=>e.age<.76);
+  for(const effect of this.effects)effect.age+=dt;
+  this.effects=this.effects.filter(effect=>effect.age<.35);
  }
  impact(ball,maxDistance=Infinity){
   const speed=Math.hypot(ball.vx,ball.vy),dx=ball.vx/speed,dy=ball.vy/speed;
@@ -119,7 +115,7 @@ class FaceBricks extends FaceShooter {
   block.hp--;
   if(block.hp<=0){
    const r=this.blockRect(block);this.pending++;this.destroyed++;
-   this.effects.push({x:r.x+r.w/2,y:r.y+r.h/2,color:this.volleyColor,age:0,collected:false});
+   this.effects.push({x:r.x+r.w/2,y:r.y+r.h/2,age:0});
    this.blocks=this.blocks.filter(b=>b!==block);this.updateScore();
   }
  }
@@ -186,17 +182,10 @@ class FaceBricks extends FaceShooter {
   const c=this.ctx;c.clearRect(0,0,this.width,this.height);
   c.textAlign='center';c.textBaseline='middle';
   for(const block of this.blocks){const r=this.blockRect(block);if(this.descent>0)r.y-=this.tile*Math.pow(this.descent/.32,3);c.fillStyle=this.blockColor(block.hp,.16);c.fillRect(r.x,r.y,r.w,r.h);c.strokeStyle=this.blockColor(block.hp);c.lineWidth=1.5;c.strokeRect(r.x,r.y,r.w,r.h);c.fillStyle='#fff';c.font=`${Math.max(13,this.tile*.29)}px Sentient,serif`;c.fillText(block.hp,r.x+r.w/2,r.y+r.h/2);}
-  for(const e of this.effects){
-   const t=Math.max(0,Math.min(1,(e.age-.12)/.6)),progress=t*t*(3-2*t),rest=1-progress;
-   const controlX=e.x+(this.launchX-e.x)*.35,controlY=Math.min(e.y,this.launchY)-this.size*2;
-   const x=rest*rest*e.x+2*rest*progress*controlX+progress*progress*this.launchX;
-   const y=rest*rest*e.y+2*rest*progress*controlY+progress*progress*this.launchY;
-   this.sprite(e.color,x,y,e.age<.12?1+Math.sin(e.age/.12*Math.PI)*.35:1-.35*progress,Math.min(1,(.76-e.age)/.08));
-  }
-  if(this.collectionPulse){
-   const pulse=this.collectionPulse,t=pulse.age/.3;
-   c.save();c.strokeStyle=['#ff5e6e','#6ce87c','#56baff','#d584ff'][pulse.color];c.globalAlpha=(1-t)*.7;c.lineWidth=1.5;
-   c.beginPath();c.arc(this.launchX,this.launchY,this.size*(.5+t*.9),0,Math.PI*2);c.stroke();c.restore();
+  for(const effect of this.effects){
+   const t=effect.age/.35;
+   c.save();c.globalAlpha=(1-t)*(1-t);c.fillStyle='#fff';c.font='16px Sentient,serif';
+   c.fillText('+1',effect.x,effect.y-t*30);c.restore();
   }
   for(const b of this.balls)this.sprite(b.color,b.x,b.y);
   c.setLineDash([3,6]);c.strokeStyle='rgba(255,255,255,.15)';c.beginPath();c.moveTo(0,this.launchY-this.size);c.lineTo(this.width,this.launchY-this.size);c.stroke();c.setLineDash([]);
