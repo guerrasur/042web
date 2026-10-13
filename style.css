@@ -70,8 +70,8 @@ html,body{touch-action:manipulation}
 
 .face-bricks.awaiting-resume canvas{opacity:.35;transition:opacity .2s}
 .bricks-resume[hidden]{display:none}
-.bricks-resume{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:2}
-.bricks-resume p{margin:0;padding:16px 20px;background:#000;border-radius:12px;font-size:clamp(19px,5vw,25px);text-align:center}
-.bricks-resume>div{display:flex;gap:20px}
-.bricks-resume button{min-width:72px;min-height:48px;border:1px solid #fff;border-radius:0;padding:10px 20px;background:#000;color:#fff;cursor:pointer}
+.bricks-resume{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding-bottom:min(80px,12dvh);z-index:2}
+.bricks-resume p{margin:0;padding:10px 14px;background:#000;border-radius:12px;font-size:clamp(16px,4.2vw,20px);text-align:center}
+.bricks-resume>div{display:flex;gap:8px}
+.bricks-resume button{min-width:56px;min-height:44px;border:1px solid #fff;border-radius:0;padding:6px 12px;font-size:14px;background:#000;color:#fff;cursor:pointer}
 .bricks-resume button:focus-visible{outline:2px solid #fa8429;outline-offset:4px}
