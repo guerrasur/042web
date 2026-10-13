@@ -20,7 +20,7 @@ class FaceBricks extends FaceShooter {
  }
  reset(){
   this.blocks=[];this.balls=[];this.effects=[];this.shot=null;this.pointer=null;
-  this.angle=-Math.PI/2;this.count=10;this.turn=1;this.destroyed=0;this.pending=0;this.emitted=0;this.returned=0;
+  this.angle=-Math.PI/2;this.count=5;this.turn=1;this.destroyed=0;this.pending=0;this.emitted=0;this.returned=0;
   this.color=0;this.volleyColor=0;this.descent=0;this.over=false;this.last=0;this.elapsed=0;this.landing=null;this.launchX=this.width/2;this.result.hidden=true;
   this.addRow();this.updateScore();this.loop();
  }
@@ -29,17 +29,17 @@ class FaceBricks extends FaceShooter {
  blockRect(b){return {x:this.left+b.col*this.tile+this.gap/2,y:b.row*this.tile+this.gap/2,w:this.tile-this.gap,h:this.tile-this.gap};}
  addRow(){
   const columns=[0,1,2,3,4,5].sort(()=>Math.random()-.5).slice(0,Math.min(5,3+Math.floor(this.turn/8)));
-  for(const col of columns){const hp=Math.max(2,Math.round(this.turn*1.4+Math.random()*(3+this.turn*.5)));this.blocks.push({col,row:0,hp,reward:hp,id:Math.random()});}
+  for(const col of columns){const hp=Math.max(2,Math.round(this.turn*1.4+Math.random()*(3+this.turn*.5)));this.blocks.push({col,row:0,hp,reward:1,id:Math.random()});}
  }
  updateScore(){this.scoreLabel.textContent=`${this.count} caras${this.pending?` (+${this.pending})`:''} · Turno ${this.turn}`;}
  fire(){
   if(!this.active||this.shot||this.over||this.descent>0)return;
   this.volleyColor=this.color;this.volleyAngle=this.angle;this.shot=true;this.elapsed=0;this.emitted=0;this.returned=0;this.volleyCount=this.count;this.pending=0;this.landing=null;this.balls=[];
-  this.emit();this.updateScore();
+  this.emit(0);this.updateScore();
  }
- emit(){
+ emit(born=this.elapsed){
   if(this.emitted>=this.volleyCount)return;
-  this.balls.push({x:this.launchX,y:this.launchY,vx:Math.cos(this.volleyAngle)*560,vy:Math.sin(this.volleyAngle)*560,color:this.volleyColor,age:0});this.emitted++;
+  this.balls.push({x:this.launchX,y:this.launchY,vx:Math.cos(this.volleyAngle)*560,vy:Math.sin(this.volleyAngle)*560,color:this.volleyColor,age:0,born});this.emitted++;
  }
  hit(ball,block,previousX,previousY,preview=false){
   const r=this.blockRect(block),radius=this.ballRadius;
@@ -53,12 +53,7 @@ class FaceBricks extends FaceShooter {
   else if(Math.abs(dx)>Math.abs(dy)){ball.x=dx<0?r.x-radius:r.x+r.w+radius;ball.vx=dx<0?-Math.abs(ball.vx):Math.abs(ball.vx);}
   else{ball.y=dy<0?r.y-radius:r.y+r.h+radius;ball.vy=dy<0?-Math.abs(ball.vy):Math.abs(ball.vy);}
   if(preview)return true;
-  block.hp--;
-  if(block.hp<=0){
-   this.pending+=block.reward;this.destroyed++;
-   this.effects.push({x:r.x+r.w/2,y:r.y+r.h/2,color:this.volleyColor,ink:this.blockColor(1),age:0,reward:block.reward});
-   this.blocks=this.blocks.filter(b=>b!==block);this.updateScore();
-  }
+  this.damage(block);
   return true;
  }
  nextTurn(){
@@ -75,42 +70,80 @@ class FaceBricks extends FaceShooter {
    if(this.descent===0&&this.blocks.some(b=>this.blockRect(b).y+this.tile>this.launchY-this.size))this.lose();
   }
   if(this.shot){
-   this.elapsed+=dt;
-   // Limit work per frame while preserving the full volley size.
-   let emittedThisFrame=0;
-   while(this.emitted<this.volleyCount&&this.elapsed>=this.emitted*.055&&emittedThisFrame++<6)this.emit();
+   const previousElapsed=this.elapsed;this.elapsed+=dt;
+   // Place each new PNG at its exact position since its scheduled launch time.
+   while(this.emitted<this.volleyCount&&this.elapsed>=this.emitted*.08)this.emit(this.emitted*.08);
    const remaining=[];
    for(const ball of this.balls){
-    ball.age+=dt;let landed=false;
-    const steps=Math.max(1,Math.ceil(560*dt/Math.max(2,this.ballRadius*.5)));
-    for(let i=0;i<steps&&!landed;i++){
-     const px=ball.x,py=ball.y;ball.x+=ball.vx*dt/steps;ball.y+=ball.vy*dt/steps;
-     if(ball.x<this.ballRadius){ball.x=2*this.ballRadius-ball.x;ball.vx=Math.abs(ball.vx);}
-     if(ball.x>this.width-this.ballRadius){ball.x=2*(this.width-this.ballRadius)-ball.x;ball.vx=-Math.abs(ball.vx);}
-     if(ball.y<this.ballRadius){ball.y=2*this.ballRadius-ball.y;ball.vy=Math.abs(ball.vy);}
-     for(const block of this.blocks)if(this.hit(ball,block,px,py))break;
-     if(ball.vy>0&&ball.y>=this.launchY){landed=true;if(this.landing===null)this.landing=ball.x;}
-    }
-    // Shallow trajectories cannot hold the round open indefinitely.
-    if(ball.age>18)landed=true;
-    if(landed)this.returned++;else remaining.push(ball);
+    const elapsed=Math.max(0,this.elapsed-Math.max(previousElapsed,ball.born??previousElapsed));
+    ball.age+=elapsed;
+    const landed=this.advance(ball,elapsed)||ball.age>18;
+    if(landed){this.returned++;if(this.landing===null)this.landing=ball.x;}
+    else remaining.push(ball);
    }
    this.balls=remaining;
    if(this.emitted===this.volleyCount&&!this.balls.length)this.nextTurn();
   }
   for(const e of this.effects)e.age+=dt;this.effects=this.effects.filter(e=>e.age<.5);
  }
+ impact(ball,maxDistance=Infinity){
+  const speed=Math.hypot(ball.vx,ball.vy),dx=ball.vx/speed,dy=ball.vy/speed;
+  let best=null;
+  const consider=(distance,nx,ny,block=null,landing=false)=>{
+   if(distance>=-.0001&&distance<=maxDistance&&(!best||distance<best.distance))best={distance:Math.max(0,distance),nx,ny,block,landing};
+  };
+  if(dx<0)consider((this.ballRadius-ball.x)/dx,1,0);
+  if(dx>0)consider((this.width-this.ballRadius-ball.x)/dx,-1,0);
+  if(dy<0)consider((this.ballRadius-ball.y)/dy,0,1);
+  if(dy>0)consider((this.launchY-ball.y)/dy,0,-1,null,true);
+  for(const block of this.blocks){
+   const r=this.blockRect(block),pad=this.ballRadius;
+   let near=-Infinity,far=Infinity,nx=0,ny=0,valid=true;
+   for(const [origin,direction,min,max,ax,ay] of [[ball.x,dx,r.x-pad,r.x+r.w+pad,1,0],[ball.y,dy,r.y-pad,r.y+r.h+pad,0,1]]){
+    if(Math.abs(direction)<1e-9){if(origin<min||origin>max)valid=false;continue;}
+    const t1=(min-origin)/direction,t2=(max-origin)/direction,entry=Math.min(t1,t2),exit=Math.max(t1,t2);
+    if(entry>near){near=entry;nx=-Math.sign(direction)*ax;ny=-Math.sign(direction)*ay;}
+    far=Math.min(far,exit);
+   }
+   if(valid&&near<=far&&far>=0&&near>=-.0001)consider(near,nx,ny,block);
+  }
+  return best;
+ }
+ damage(block){
+  block.hp--;
+  if(block.hp<=0){
+   const r=this.blockRect(block);this.pending++;this.destroyed++;
+   this.effects.push({x:r.x+r.w/2,y:r.y+r.h/2,color:this.volleyColor,ink:this.blockColor(1),age:0,reward:1});
+   this.blocks=this.blocks.filter(b=>b!==block);this.updateScore();
+  }
+ }
+ advance(ball,dt){
+  let distance=Math.hypot(ball.vx,ball.vy)*dt;
+  for(let i=0;i<12&&distance>1e-6;i++){
+   const speed=Math.hypot(ball.vx,ball.vy),dx=ball.vx/speed,dy=ball.vy/speed,hit=this.impact(ball,distance);
+   if(!hit){ball.x+=dx*distance;ball.y+=dy*distance;return false;}
+   ball.x+=dx*hit.distance;ball.y+=dy*hit.distance;distance-=hit.distance;
+   if(hit.landing)return true;
+   if(hit.block)this.damage(hit.block);
+   const dot=ball.vx*hit.nx+ball.vy*hit.ny;
+   ball.vx-=2*dot*hit.nx;ball.vy-=2*dot*hit.ny;
+   ball.x+=hit.nx*.001;ball.y+=hit.ny*.001;
+  }
+  return false;
+ }
  trajectory(){
   const ball={x:this.launchX,y:this.launchY,vx:Math.cos(this.angle)*560,vy:Math.sin(this.angle)*560};
-  const points=[];let traveled=0,rebounds=0;
-  for(let i=0;i<700;i++){
-   const px=ball.x,py=ball.y;ball.x+=ball.vx/140;ball.y+=ball.vy/140;traveled+=4;
-   if(ball.x<this.ballRadius){ball.x=2*this.ballRadius-ball.x;ball.vx=Math.abs(ball.vx);rebounds++;}
-   if(ball.x>this.width-this.ballRadius){ball.x=2*(this.width-this.ballRadius)-ball.x;ball.vx=-Math.abs(ball.vx);rebounds++;}
-   if(ball.y<this.ballRadius){ball.y=2*this.ballRadius-ball.y;ball.vy=Math.abs(ball.vy);rebounds++;}
-   const hit=this.blocks.some(block=>this.hit(ball,block,px,py,true));
-   if(traveled>=this.size*3)points.push({x:ball.x,y:ball.y});
-   if(hit||rebounds>=3||ball.y>this.launchY)break;
+  const points=[];let traveled=0;
+  for(let i=0;i<5;i++){
+   const speed=Math.hypot(ball.vx,ball.vy),dx=ball.vx/speed,dy=ball.vy/speed,hit=this.impact(ball,this.height*3);
+   const distance=hit?hit.distance:this.height*3;
+   if(!points.length&&traveled+distance>=this.size*3){const skip=Math.max(0,this.size*3-traveled);points.push({x:ball.x+dx*skip,y:ball.y+dy*skip});}
+   ball.x+=dx*distance;ball.y+=dy*distance;traveled+=distance;
+   if(points.length)points.push({x:ball.x,y:ball.y});
+   if(!hit||hit.landing)break;
+   const dot=ball.vx*hit.nx+ball.vy*hit.ny;
+   ball.vx-=2*dot*hit.nx;ball.vy-=2*dot*hit.ny;
+   ball.x+=hit.nx*.001;ball.y+=hit.ny*.001;
   }
   return points;
  }
