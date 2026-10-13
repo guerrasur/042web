@@ -241,7 +241,7 @@ const menuToggle=document.getElementById('menu-toggle');
 const menuOptions=[...menu.querySelectorAll('.menu-option')];
 const footerActions=document.querySelector('.footer-actions');
 const pageHeader=document.querySelector('header');
-let menuOpen=false,currentScreen='home';
+let menuOpen=false,currentScreen='home',menuTaps=0;
 function sizeMenu(){
  menu.style.setProperty('--menu-height',Math.max(0,footerActions.getBoundingClientRect().top-18)+'px');
 }
@@ -257,7 +257,7 @@ function setMenu(open){
    if(game.pointer!==null&&game.canvas.hasPointerCapture(game.pointer))game.canvas.releasePointerCapture(game.pointer);
    game.pointer=null;
   }
-  menuOptions.find(option=>option.dataset.screen===currentScreen).focus({preventScroll:true});
+  (menuOptions.find(option=>option.dataset.screen===currentScreen)||menuOptions[0]).focus({preventScroll:true});
  }else menuToggle.focus({preventScroll:true});
 }
 function resetHome(){
@@ -279,7 +279,14 @@ function resetHome(){
  });
  paint();resize();
 }
-menuToggle.addEventListener('click',()=>setMenu(!menuOpen));
+menuToggle.addEventListener('click',()=>{
+ if(++menuTaps===6){
+  menuTaps=0;currentScreen='bubble';
+  for(const item of menuOptions){item.classList.remove('selected');item.removeAttribute('aria-current');}
+  setMenu(false);openGame(shooter);return;
+ }
+ setMenu(!menuOpen);
+});
 for(const option of menuOptions)option.addEventListener('click',()=>{
  currentScreen=option.dataset.screen;
  for(const item of menuOptions){
@@ -287,7 +294,7 @@ for(const option of menuOptions)option.addEventListener('click',()=>{
   if(selected)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');
  }
  setMenu(false);
- if(currentScreen==='home')resetHome();else openGame(currentScreen==='bricks'?bricks:shooter);
+ if(currentScreen==='home')resetHome();else openGame(bricks);
 });
 document.addEventListener('keydown',event=>{
  if(!menuOpen)return;
