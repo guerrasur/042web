@@ -3,7 +3,8 @@
 class FaceBricks extends FaceShooter {
  constructor(arena,source){
   super(arena,source);this.root.classList.add('face-bricks');
-  this.root.querySelector('.shooter-hint').textContent='Arrastrá para apuntar · Soltá para disparar';
+  this.root.querySelector('.shooter-hud').remove();
+  this.root.querySelector('.shooter-hint').remove();
   this.canvas.setAttribute('aria-label','Dispará las caras contra los bloques numerados. Arrastrá para apuntar y soltá para disparar.');
  }
  resize(){
@@ -31,7 +32,7 @@ class FaceBricks extends FaceShooter {
   const columns=[0,1,2,3,4,5].sort(()=>Math.random()-.5).slice(0,Math.min(5,3+Math.floor(this.turn/8)));
   for(const col of columns){const hp=Math.max(2,Math.round(this.turn*1.4+Math.random()*(3+this.turn*.5)));this.blocks.push({col,row:0,hp,reward:1,id:Math.random()});}
  }
- updateScore(){this.scoreLabel.textContent=`${this.count} caras${this.pending?` (+${this.pending})`:''} · Turno ${this.turn}`;}
+ updateScore(){}
  fire(){
   if(!this.active||this.shot||this.over||this.descent>0)return;
   this.volleyColor=this.color;this.volleyAngle=this.angle;this.shot=true;this.elapsed=0;this.emitted=0;this.returned=0;this.volleyCount=this.count;this.pending=0;this.landing=null;this.balls=[];
@@ -185,7 +186,7 @@ class FaceBricks extends FaceShooter {
   c.setLineDash([3,6]);c.strokeStyle='rgba(255,255,255,.15)';c.beginPath();c.moveTo(0,this.launchY-this.size);c.lineTo(this.width,this.launchY-this.size);c.stroke();c.setLineDash([]);
   if(!this.over){
    this.sprite(this.shot?this.volleyColor:this.color,this.launchX,this.launchY);
-   c.fillStyle='#aaa';c.font='12px Sentient,serif';c.fillText(this.shot?`${this.volleyCount-this.emitted} por disparar`: `×${this.count}`,this.launchX,this.launchY-this.size*.75);
+   c.fillStyle='#aaa';c.font='12px Sentient,serif';c.fillText(`×${this.shot?this.volleyCount-this.emitted:this.count}`,this.launchX,this.launchY-this.size*.75);
    if(!this.shot&&!this.descent){
     if(this.pointer!==null)this.drawTrajectory();
     const dx=Math.cos(this.angle),dy=Math.sin(this.angle),length=this.size*3,x=this.launchX+dx*length,y=this.launchY+dy*length;c.strokeStyle='#ddd';c.lineWidth=2;c.beginPath();c.moveTo(this.launchX+dx*this.size*.6,this.launchY+dy*this.size*.6);c.lineTo(x,y);c.moveTo(x-dx*9-dy*5,y-dy*9+dx*5);c.lineTo(x,y);c.lineTo(x-dx*9+dy*5,y-dy*9-dx*5);c.stroke();}
