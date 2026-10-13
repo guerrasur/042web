@@ -7,7 +7,7 @@ class FaceBricks extends FaceShooter {
   this.root.querySelector('.shooter-hint').remove();
   const restart=this.result.querySelector('button');restart.classList.add('bricks-restart');
   restart.setAttribute('aria-label','Jugar de nuevo');restart.title='Jugar de nuevo';
-  restart.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>';
+  restart.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(24 0) scale(-1 1)" d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>';
   this.recordLabel=document.createElement('p');this.recordLabel.className='bricks-record';this.result.insertBefore(this.recordLabel,restart);
   this.record=0;
   try{const saved=Number(localStorage.getItem('042-bricks-record'));if(Number.isSafeInteger(saved)&&saved>=0)this.record=saved;}catch{}

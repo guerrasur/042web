@@ -21,7 +21,8 @@ let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
 let plans=null,planStates=null;
 let shooterTimer=null;
 let shooter=null;
-let bricks=null,returnToShooter=false;
+let bricks=null;
+let presaveTaps=0;
 const colorTimers=[];
 const group=document.getElementById('group');
 const heads=[group];
@@ -174,9 +175,7 @@ function inflate(body){
   }
   if(bodies.every(b=>b.burst))shooterTimer=setTimeout(()=>{
    if(!bodies.every(b=>b.burst)||shooter?.active||bricks?.active)return;
-   stopPlans();cancelAnimationFrame(frame);
-   for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
-   shooter.start();
+   openGame(bricks);
   },950);
   resume();return;
  }else{body.inflation++;body.vx*=2;body.vy*=2;if(body.targetSpeed)body.targetSpeed*=2;}
@@ -229,22 +228,18 @@ for(const body of bodies){
 }
 shooter=new window.FaceShooter(arena,originalGroupSource);
 bricks=new window.FaceBricks(arena,originalGroupSource);
-const bricksButton=document.getElementById('bricks-play');
-bricksButton.addEventListener('click',()=>{
- if(!started)return;
- if(bricks.active){
-  bricks.active=false;cancelAnimationFrame(bricks.frame);bricks.root.hidden=true;bricks.pointer=null;
-  bricksButton.textContent='Jugar a los bloques';
-  if(returnToShooter||bodies.every(b=>b.burst)){
-   shooter.active=true;shooter.root.hidden=false;
-   if(!shooter.cells)shooter.start();else{shooter.resize();shooter.loop();}
-  }else{for(const b of bodies)b.element.hidden=!b.active;resize();}
- }else{
-  returnToShooter=shooter.active;shooter.active=false;shooter.root.hidden=true;cancelAnimationFrame(shooter.frame);
-  stopPlans();cancelAnimationFrame(frame);for(const b of bodies){b.element.hidden=true;for(const fragment of b.fragments)fragment.remove();b.fragments.clear();}
-  bricks.start();bricksButton.textContent='Cerrar juego de bloques';
+function openGame(game){
+ clearTimeout(shooterTimer);shooterTimer=null;
+ stopPlans();cancelAnimationFrame(frame);frame=0;
+ for(const current of [shooter,bricks]){
+  current.active=false;current.pointer=null;current.root.hidden=true;cancelAnimationFrame(current.frame);
  }
-});
+ for(const body of bodies){
+  if(body.grab){clearTimeout(body.grab.timer);body.grab=null;body.element.classList.remove('dragging');}
+  body.element.hidden=true;for(const fragment of body.fragments)fragment.remove();body.fragments.clear();
+ }
+ game.start();
+}
 
 function tapArena(event){
  if(!started||shooter.active||bricks?.active||event.target!==arena)return;
@@ -294,6 +289,9 @@ loading.addEventListener('keydown',event=>{
  if(loaded&&(event.key==='Enter'||event.key===' ')){event.preventDefault();enter();}
 });
 document.getElementById('presave').addEventListener('click',()=>{
+ if(started&&++presaveTaps===10){
+  presaveTaps=0;document.getElementById('notice').hidden=true;openGame(shooter);return;
+ }
  if(PRESAVE_URL){window.location.assign(PRESAVE_URL);}else{document.getElementById('notice').hidden=false;}
 });
 
@@ -365,7 +363,7 @@ setTimeout(()=>{entranceMinimumElapsed=true;syncEntrance();},3000);
 syncEntrance();
 
 // Replaced with the commit SHA by the Pages build, for every deployment.
-const BUILD_VERSION='a697a3f5ed991bf8918d38636ab5c1bff630211b';
+const BUILD_VERSION='1ddb4bbb6751181d2d5cde39f9b03ff2e45f2bc3';
 let checkingUpdate=false;
 async function checkForUpdate(){
  if(checkingUpdate||document.hidden||BUILD_VERSION.startsWith('__'))return;
