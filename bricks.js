@@ -280,7 +280,6 @@ class FaceBricks extends FaceShooter {
    c.fillText('+1',effect.x,effect.y-t*30);c.restore();
   }
   for(const b of this.balls)this.sprite(b.color,b.x,b.y);
-  c.setLineDash([3,6]);c.strokeStyle='rgba(255,255,255,.15)';c.beginPath();c.moveTo(0,this.launchY-this.size);c.lineTo(this.width,this.launchY-this.size);c.stroke();c.setLineDash([]);
   if(!this.over){
    this.sprite(this.shot?this.volleyColor:this.color,this.launchX,this.launchY);
    c.fillStyle='#aaa';c.font='12px Sentient,serif';c.fillText(`×${this.shot?this.volleyCount-this.emitted:this.count}`,this.launchX,this.launchY-this.size*.75);
