@@ -103,7 +103,7 @@
   }
   pause(){this.closeHistory(false);this.active=false;this.root.hidden=true;clearTimeout(this.timer);this.cancelDrag();this.cancelAction();this.save();}
   openHistory(){
-   if(!this.active||this.busy||this.historyOpen||!this.state.cadavers.length)return;
+   if(!this.active||this.busy||this.historyOpen||!this.state.cadavers.some(p=>p.number<this.state.number))return;
    this.cancelDrag();this.renderHistory();this.historyOpen=true;
    this.previousInert=this.page.inert;this.previousAria=this.page.getAttribute('aria-hidden');
    this.page.inert=true;this.page.setAttribute('aria-hidden','true');this.page.classList.add('cadavers-open');
@@ -140,7 +140,7 @@
   }
   render(){
    const s=this.state;if(!s)return;
-   this.historyTools.hidden=!s.cadavers.length;this.historyButton.disabled=this.busy;
+   this.historyTools.hidden=!s.cadavers.some(p=>p.number<s.number);this.historyButton.disabled=this.busy;
    if(this.historyOpen)this.renderHistory();
    this.root.classList.toggle('is-dead',s.phase==='dead');
    this.sprite.style.filter=`sepia(1) saturate(8) hue-rotate(${s.hue}deg) brightness(.95)`;
