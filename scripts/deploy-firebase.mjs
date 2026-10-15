@@ -49,14 +49,18 @@ try {
     throw new Error(`No se encontró lucio42.web.app en los proyectos accesibles de esta cuenta.${detail} Revisá la cuenta y el dominio del sitio.`);
   }
   console.log(`Proyecto encontrado: ${projectId}. Publicando en https://lucio42.web.app ...`);
+  console.log('Subiendo los archivos de a uno para reducir la carga simultánea.');
   const deployment = spawnSync('firebase', ['deploy', '--only', 'hosting', '--project', projectId, '--non-interactive'], {
     cwd: root, stdio: 'inherit',
+    env: { ...process.env, FIREBASE_HOSTING_UPLOAD_CONCURRENCY: '1' },
   });
   if (deployment.error) throw deployment.error;
   if (deployment.status !== 0) throw new Error('Firebase no completó la publicación. Copiá el error mostrado arriba.');
   console.log('Publicado: https://lucio42.web.app');
 } catch (error) {
   console.error(error.message);
-  console.error('Si el error es de autenticación, ejecutá firebase login --no-localhost y volvé a ejecutar este asistente.');
+  if (/auth|login|credential|unauthenticated|401/i.test(error.message)) {
+    console.error('Para renovar el acceso, ejecutá firebase login --no-localhost y volvé a ejecutar este asistente.');
+  }
   process.exitCode = 1;
 }
