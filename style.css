@@ -103,7 +103,7 @@ html,body{touch-action:manipulation}
 .wonguikung button:focus-visible{outline:2px solid #fa8429;outline-offset:5px}
 .wonguikung-names button:active{background:#fff;color:#000}
 .wonguikung-apple{position:relative;width:64px;height:64px;padding:0;border:0;border-radius:0;background:transparent;cursor:grab;touch-action:none;z-index:2;-webkit-tap-highlight-color:transparent}
-.wonguikung-apple svg{display:block;width:100%;height:100%;pointer-events:none}
+.wonguikung-apple svg,.wonguikung-apple img{display:block;width:100%;height:100%;pointer-events:none}
 .wonguikung-apple.dragging{cursor:grabbing;will-change:transform}
 .wonguikung-apple.is-eaten{opacity:0;pointer-events:none}
 .can-feed .wonguikung-pet{transform:scale(1.035)}

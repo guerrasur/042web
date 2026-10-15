@@ -39,7 +39,7 @@
    return s;
   }catch{return null;}
  }
- const apple='<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#94b981" d="M34 16c0-9 7-13 16-12-1 9-7 14-16 12"/><path fill="none" stroke="#ddd" stroke-width="3" d="m33 24-3-14"/><path fill="#fa8429" d="M32 23C18 12 7 23 9 37c2 15 13 24 23 19 10 5 21-4 23-19 2-14-9-25-23-14Z"/><path fill="none" stroke="#ffd4b3" stroke-width="3" stroke-linecap="round" d="M18 30c-3 5-2 10 0 13"/></svg>';
+ const apple='<img src="manz.png" alt="" aria-hidden="true" draggable="false">';
  const broom='<svg viewBox="0 0 100 160" aria-hidden="true"><path stroke="#fa8429" stroke-width="8" stroke-linecap="square" d="M67 4 44 107"/><path fill="#eee" d="m29 96 33 8 18 41-64-16Z"/><path fill="none" stroke="#000" stroke-width="3" d="m32 108-6 23m15-21-5 24m15-21-4 23m13-20-3 22"/></svg>';
  const eyes=[[167,65],[257,60],[64,145],[111,126],[325,128],[366,148]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="19" ry="15" fill="#000"/><path d="M${x-10} ${y-10}l20 20m-20 0 20-20"/>`).join('');
  class Wonguikung {

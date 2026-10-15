@@ -371,8 +371,10 @@ document.getElementById('presave').addEventListener('click',()=>{
 
 // Add songs in order, using local MP3 paths or direct audio URLs.
 const TRACKS=[
- {title:'A medio azular',album:'Meditación Guiada Para Perros',edition:'EP (2026)',src:'audio/a-medio-azular.mp3'},
- {title:'200 pesos fuertes (instrumental)',src:'audio/200-pesos-fuertes-instrumental.mp3'}
+ {title:'A medio azular',artist:'Lucio 042',album:'Meditación Guiada Para Perros',edition:'EP (2026)',src:'audio/a-medio-azular.mp3'},
+ {title:'200 pesos fuertes (instrumental)',artist:'Lucio 042',src:'audio/200-pesos-fuertes-instrumental.mp3'},
+ {title:'Rueguen por Nosotros',artist:'Lucio 042',src:'audio/rueguen-por-nosotros.mp3'},
+ {title:'Rumbo de Cambio',artist:'Lucio 042 y OCRE 9 (051)',src:'audio/rumbo-de-cambio.mp3'}
 ];
 const audio=document.getElementById('audio');
 const previous=document.getElementById('previous');
@@ -394,6 +396,7 @@ function selectTrack(index){
  if(index<0||index>=TRACKS.length)return;
  audio.pause();trackIndex=index;
  document.querySelector('h1').textContent='"'+TRACKS[index].title+'"';
+ document.getElementById('track-artist').textContent=TRACKS[index].artist;
  if(TRACKS[index].src){audio.src=TRACKS[index].src;}else{audio.removeAttribute('src');}
  audio.load();syncPlayer();if(started)startAudio();
 }
