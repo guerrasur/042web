@@ -24,7 +24,7 @@ jobs:
       - name: Prepare website
         run: |
           mkdir dist
-          cp index.html style.css script.js bubble.js bricks.js logo-042.png 'Grupo 4.png' sun.svg dist/
+          cp index.html style.css script.js bubble.js bricks.js wonguikung.js huevon_umb.png huevon_move_umb.png logo-042.png 'Grupo 4.png' sun.svg dist/
           cp -R fonts audio dist/
           sed -i "s/const BUILD_VERSION='[^']*';/const BUILD_VERSION='${{ github.sha }}';/" dist/script.js
           sed -i "s/?v=[0-9a-f]*/?v=${{ github.sha }}/g" dist/index.html

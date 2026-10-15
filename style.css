@@ -40,7 +40,10 @@ html,body{touch-action:manipulation}
 .footer-actions{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:596px}
 .footer-actions #presave{flex:1;min-width:0}
 #menu-toggle{display:grid;place-items:center;flex:0 0 44px;width:44px;height:52px;padding:8px;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
-#menu-toggle svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+#menu-toggle{padding:0}
+#menu-toggle img{display:block;width:44px;height:44px;object-fit:contain;pointer-events:none}
+#menu-toggle .menu-open,#menu-toggle[aria-expanded="true"] .menu-closed{display:none}
+#menu-toggle[aria-expanded="true"] .menu-open{display:block}
 #menu-toggle:focus-visible{outline:2px solid currentColor;outline-offset:4px;border-radius:4px}
 .menu-option:focus{outline:none}
 .menu-option:focus-visible>span:last-child{text-decoration:underline;text-underline-offset:6px}
@@ -75,3 +78,35 @@ html,body{touch-action:manipulation}
 .bricks-resume>div{display:flex;gap:8px}
 .bricks-resume button{min-width:56px;min-height:44px;border:1px solid #fff;border-radius:0;padding:6px 12px;font-size:14px;background:#000;color:#fff;cursor:pointer}
 .bricks-resume button:focus-visible{outline:2px solid #fa8429;outline-offset:4px}
+
+.wonguikung-icon{object-fit:contain;filter:grayscale(1)}
+.menu-option.selected .wonguikung-icon{filter:sepia(1) saturate(6) hue-rotate(345deg)}
+/* Four menu rows, with a small space below to keep them just above center. */
+.menu-options::after{height:min(24px,3dvh)}
+.menu-options{gap:clamp(8px,2.5dvh,24px)}
+.wonguikung[hidden],.wonguikung [hidden]{display:none}
+.wonguikung{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px;background:#000;text-align:center}
+.wonguikung-name{margin:0;min-height:1.4em;font-size:clamp(21px,5.6vw,30px);line-height:1.4}
+.wonguikung-stage{position:relative;display:flex;align-items:center;justify-content:center;width:100%;flex:1;min-height:0;max-height:440px}
+.wonguikung-pet{display:block;width:min(78vw,480px,var(--pet-size,78vw));max-width:100%;aspect-ratio:427/330;flex:none;padding:0;border:0;background:transparent;color:#fff;line-height:0;cursor:default;-webkit-tap-highlight-color:transparent}
+.wonguikung-pet:disabled{opacity:1}
+.wonguikung-sprite{display:block;position:relative;width:100%;height:100%}
+.wonguikung-sprite>img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.wonguikung-eyes{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
+.wonguikung-eyes path{fill:none;stroke:#fff;stroke-width:7;stroke-linecap:square}
+.is-dead .wonguikung-eyes{display:block}
+.is-dead .wonguikung-pet{cursor:pointer}
+.wonguikung-dialogue{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;flex:none;min-height:118px;width:100%;padding:6px 0 8px}
+.wonguikung-text{margin:0;font-size:clamp(20px,5vw,27px);line-height:1.4}
+.wonguikung-names{display:flex;gap:8px;justify-content:center;width:100%;max-width:380px}
+.wonguikung-names button{min-width:0;flex:1;padding:10px 6px;min-height:44px;border:1px solid #fff;border-radius:0;background:#000;color:#fff;font-size:clamp(15px,3.9vw,19px);cursor:pointer}
+.wonguikung button:focus-visible{outline:2px solid #fa8429;outline-offset:5px}
+.wonguikung-names button:active{background:#fff;color:#000}
+.wonguikung-apple{position:relative;width:64px;height:64px;padding:0;border:0;border-radius:0;background:transparent;cursor:grab;touch-action:none;z-index:2;-webkit-tap-highlight-color:transparent}
+.wonguikung-apple svg{display:block;width:100%;height:100%;pointer-events:none}
+.wonguikung-apple.dragging{cursor:grabbing;will-change:transform}
+.wonguikung-apple.is-eaten{opacity:0;pointer-events:none}
+.can-feed .wonguikung-pet{transform:scale(1.035)}
+.wonguikung-broom{position:absolute;width:100px;height:160px;bottom:20%;left:calc(50% - 50px);pointer-events:none;z-index:2}
+.wonguikung-broom svg{width:100%;height:100%}
+@media(max-height:650px){.menu-option{min-height:48px;font-size:23px;padding:4px 12px}.menu-icon{width:48px;height:48px}.menu-options{gap:8px;padding-top:12px;padding-bottom:12px}.wonguikung-dialogue{min-height:96px;gap:8px}.wonguikung-text{font-size:20px}.wonguikung-apple{width:52px;height:52px}.wonguikung-name{font-size:20px}}

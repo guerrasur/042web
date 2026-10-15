@@ -21,6 +21,7 @@ let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
 let plans=null,planStates=null;
 let shooter=null;
 let bricks=null;
+let wonguikung=null;
 const colorTimers=[];
 const group=document.getElementById('group');
 const heads=[group];
@@ -118,7 +119,7 @@ function animate(now){
 }
 function resume(){
  cancelAnimationFrame(frame);frame=0;last=0;stopPlans();
- if(!started||document.hidden||shooter?.active||bricks?.active)return;
+ if(!started||document.hidden||shooter?.active||bricks?.active||wonguikung?.active)return;
  if(bodies.some(b=>b.grab)){frame=requestAnimationFrame(animate);return;}
  if(!reducedMotion.matches)playPlans();
 }
@@ -222,8 +223,10 @@ for(const body of bodies){
 }
 shooter=new window.FaceShooter(arena,originalGroupSource);
 bricks=new window.FaceBricks(arena,originalGroupSource);
+wonguikung=new window.Wonguikung(arena,originalGroupSource);
 function openGame(game){
  bricks.pause();
+ wonguikung.pause();
  
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const current of [shooter,bricks]){
@@ -254,6 +257,7 @@ function setMenu(open){
  menuToggle.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');
  arena.inert=open;pageHeader.inert=open;
  if(open){
+  wonguikung.cancelDrag();
   for(const game of [shooter,bricks]){
    if(game.pointer!==null&&game.canvas.hasPointerCapture(game.pointer))game.canvas.releasePointerCapture(game.pointer);
    game.pointer=null;
@@ -263,6 +267,7 @@ function setMenu(open){
 }
 function resetHome(){
  bricks.pause();
+ wonguikung.pause();
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const game of [shooter,bricks]){
   game.active=false;game.pointer=null;game.root.hidden=true;cancelAnimationFrame(game.frame);
@@ -300,7 +305,7 @@ for(const option of menuOptions)option.addEventListener('click',()=>{
   if(selected)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');
  }
  setMenu(false);
- if(currentScreen==='home')resetHome();else openGame(bricks);
+ if(currentScreen==='home')resetHome();else openGame(currentScreen==='wonguikung'?wonguikung:bricks);
 });
 document.addEventListener('keydown',event=>{
  if(!menuOpen)return;
@@ -314,7 +319,7 @@ new ResizeObserver(sizeMenu).observe(footerActions);
 window.addEventListener('resize',sizeMenu);
 
 function tapArena(event){
- if(!started||shooter.active||bricks?.active||event.target!==arena)return;
+ if(!started||shooter.active||bricks?.active||wonguikung?.active||event.target!==arena)return;
  const other=bodies.find(body=>!body.active);
  if(other){
   stopPlans();
