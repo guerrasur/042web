@@ -396,9 +396,13 @@ const trackCover=document.getElementById('track-cover');
 const openEye=new Image();openEye.src='eyesopen.png';
 const eyeHint=document.getElementById('eye-hint');
 let eyeHintTimer=null,eyeTouched=false;
-let eyeOpenAttempts=0,lastEyeTap=-Infinity,eyeCrying=false;
+let eyeOpenAttempts=0,lastEyeTap=-Infinity,eyeCrying=false,eyeTearCount=0;
 function shedEyeTear(){
  eyeCrying=true;
+ if(++eyeTearCount===3){
+  eyeHint.textContent='Basta…';
+  eyeHint.classList.add('eye-plea','visible');
+ }
  const tear=document.createElement('span');
  tear.className='eye-tear';tear.setAttribute('aria-hidden','true');
  songVisibility.append(tear);
@@ -420,8 +424,8 @@ function beginEyeHint(){
  },10000);
 }
 songVisibility.addEventListener('click',()=>{
- eyeTouched=true;clearTimeout(eyeHintTimer);eyeHint.classList.remove('visible');
  if(eyeCrying)return;
+ eyeTouched=true;clearTimeout(eyeHintTimer);eyeHint.classList.remove('visible');
  const now=performance.now();
  if(now-lastEyeTap>3000)eyeOpenAttempts=0;
  lastEyeTap=now;
