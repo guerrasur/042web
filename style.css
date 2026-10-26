@@ -145,7 +145,7 @@ main.cadavers-open{transform:translateX(100%)}
 #track-cover{position:absolute;right:0;top:50%;transform:translateY(-50%);display:block;width:88px;height:88px;object-fit:cover}
 
 /* Entry reveals stay in the same rows as the expanded controls. */
-#song-visibility{transition:left .8s cubic-bezier(.22,.7,.25,1)}
+#song-visibility{z-index:2;transition:left .8s cubic-bezier(.22,.7,.25,1)}
 .song-header.song-collapsed #song-visibility{left:50%}
 #song-panel{opacity:1;visibility:visible;clip-path:inset(0);transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s}
 .song-collapsed #song-panel{opacity:0;visibility:hidden;clip-path:inset(0 100% 0 0);pointer-events:none;transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s .8s}
