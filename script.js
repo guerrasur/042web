@@ -396,6 +396,22 @@ const trackCover=document.getElementById('track-cover');
 const openEye=new Image();openEye.src='eyesopen.png';
 const eyeHint=document.getElementById('eye-hint');
 let eyeHintTimer=null,eyeTouched=false;
+let eyeOpenAttempts=0,lastEyeTap=-Infinity,eyeCrying=false;
+function shedEyeTear(){
+ eyeCrying=true;
+ const tear=document.createElement('span');
+ tear.className='eye-tear';tear.setAttribute('aria-hidden','true');
+ songVisibility.append(tear);
+ const falling=tear.animate(reducedMotion.matches?[
+  {opacity:1},{opacity:0}
+ ]:[
+  {transform:'translateY(0) rotate(-45deg)',opacity:1},
+  {transform:'translateY(18px) rotate(-45deg)',opacity:.85,offset:.35},
+  {transform:'translateY(66px) rotate(-45deg)',opacity:0}
+ ],{duration:reducedMotion.matches?250:900,easing:'ease-in',fill:'forwards'});
+ const finish=()=>{tear.remove();eyeCrying=false;};
+ falling.onfinish=finish;falling.oncancel=finish;
+}
 function beginEyeHint(){
  if(eyeTouched)return;
  clearTimeout(eyeHintTimer);
@@ -405,7 +421,14 @@ function beginEyeHint(){
 }
 songVisibility.addEventListener('click',()=>{
  eyeTouched=true;clearTimeout(eyeHintTimer);eyeHint.classList.remove('visible');
+ if(eyeCrying)return;
+ const now=performance.now();
+ if(now-lastEyeTap>3000)eyeOpenAttempts=0;
+ lastEyeTap=now;
  const visible=songVisibility.getAttribute('aria-expanded')!=='true';
+ if(visible&&++eyeOpenAttempts===3){
+  eyeOpenAttempts=0;shedEyeTear();return;
+ }
  songVisibility.setAttribute('aria-expanded',String(visible));
  songVisibility.setAttribute('aria-label',visible?'Ocultar canción':'Mostrar canción');
  songVisibility.querySelector('img').src=visible?'eyesopen.png':'eyesclos.png';
