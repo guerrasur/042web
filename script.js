@@ -371,11 +371,24 @@ document.getElementById('presave').addEventListener('click',()=>{
 
 // Add songs in order, using local MP3 paths or direct audio URLs.
 const TRACKS=[
- {title:'A medio azular',artist:'Lucio 042',album:'Meditación Guiada Para Perros',edition:'EP (2026)',src:'audio/a-medio-azular.mp3'},
- {title:'200 pesos fuertes (instrumental)',artist:'Lucio 042',src:'audio/200-pesos-fuertes-instrumental.mp3'},
- {title:'Rueguen por Nosotros',artist:'Lucio 042',src:'audio/rueguen-por-nosotros.mp3'},
- {title:'Rumbo de Cambio',artist:'Lucio 042 y OCRE 9 (051)',src:'audio/rumbo-de-cambio.mp3'}
+ {title:'A medio azular',artist:'Lucio 042',album:'Meditación Guiada Para Perros',cover:'covers/meditacion-guiada-para-perros.webp',src:'audio/a-medio-azular.mp3'},
+ {title:'200 pesos fuertes (instrumental)',artist:'Lucio 042',album:'Viejo y Clásico (Beattape)',cover:'covers/viejo-y-clasico.webp',src:'audio/200-pesos-fuertes-instrumental.mp3'},
+ {title:'Rueguen por Nosotros',artist:'Lucio 042',album:'Rumbo de Cambio',cover:'covers/rumbo-de-cambio.webp',src:'audio/rueguen-por-nosotros.mp3'},
+ {title:'Rumbo de Cambio',artist:'Lucio 042 y OCRE 9 (051)',album:'Rumbo de Cambio',cover:'covers/rumbo-de-cambio.webp',src:'audio/rumbo-de-cambio.mp3'}
 ];
+// The eye hides the song panel without interrupting playback.
+const songVisibility=document.getElementById('song-visibility');
+const songPanel=document.getElementById('song-panel');
+const trackCover=document.getElementById('track-cover');
+const closedEye=new Image();closedEye.src='eyesclos.png';
+songVisibility.addEventListener('click',()=>{
+ const visible=songVisibility.getAttribute('aria-expanded')!=='true';
+ songVisibility.setAttribute('aria-expanded',String(visible));
+ songVisibility.setAttribute('aria-label',visible?'Ocultar canción':'Mostrar canción');
+ songVisibility.querySelector('img').src=visible?'eyesopen.png':'eyesclos.png';
+ songPanel.hidden=!visible;
+});
+trackCover.addEventListener('error',()=>{trackCover.hidden=true;});
 const audio=document.getElementById('audio');
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');
@@ -397,6 +410,10 @@ function selectTrack(index){
  audio.pause();trackIndex=index;
  document.querySelector('h1').textContent='"'+TRACKS[index].title+'"';
  document.getElementById('track-artist').textContent=TRACKS[index].artist;
+ document.getElementById('track-album').textContent=TRACKS[index].album;
+ trackCover.hidden=!TRACKS[index].cover;
+ if(TRACKS[index].cover)trackCover.src=TRACKS[index].cover;
+ else trackCover.removeAttribute('src');
  if(TRACKS[index].src){audio.src=TRACKS[index].src;}else{audio.removeAttribute('src');}
  audio.load();syncPlayer();if(started)startAudio();
 }

@@ -4,7 +4,7 @@
 
 .player-controls{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:10px}.player-button{display:grid;place-items:center;width:44px;height:44px;padding:10px;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.player-button svg{width:20px;height:20px;fill:currentColor}.player-button svg[hidden]{display:none}.player-button:disabled{cursor:default}#previous:disabled,#next:disabled{opacity:.4}.player-button:active:not(:disabled){transform:scale(.9)}.player-button:focus-visible{outline:2px solid #fff;outline-offset:0;border-radius:6px}
 
-header .album{font-size:clamp(12px,3.2vw,15px);font-weight:300;line-height:1.4;opacity:.6;margin:6px 0 0;text-wrap:balance}
+header .album{font-size:clamp(12px,3.2vw,15px);font-weight:300;line-height:1.4;color:#fff;opacity:.4;margin:6px 0 0;text-wrap:balance}
 
 .album span{display:block}
 
@@ -130,3 +130,14 @@ main.cadavers-open{transform:translateX(100%)}
 .cadaver-number{margin:0 0 10px;font-size:14px;color:#999}
 .cadaver-name{margin:10px 0 0;font-size:16px;overflow-wrap:anywhere}
 @media(prefers-reduced-motion:reduce){main,.wonguikung-cadavers,.wonguikung-cadavers.open{transition:none}}
+
+/* Keep the eye available when the song panel is hidden. */
+.song-header{padding-inline:56px;min-height:52px}
+#song-visibility{position:absolute;left:0;top:0;display:grid;place-items:center;width:44px;height:52px;padding:0;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
+#song-visibility img{display:block;width:44px;height:44px;object-fit:contain;pointer-events:none}
+#song-visibility:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:4px}
+#song-panel[hidden],#track-cover[hidden]{display:none}
+.song-heading{display:flex;align-items:center;justify-content:center;gap:12px}
+.song-description{min-width:0;overflow-wrap:anywhere}
+#track-cover{display:block;flex:none;width:44px;height:44px;object-fit:cover}
+@media(max-width:380px){.song-header{padding-inline:48px}#song-visibility{width:40px}#song-visibility img{width:44px;height:44px}.song-heading{gap:8px}}

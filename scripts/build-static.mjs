@@ -9,10 +9,10 @@ if (!/^[a-f0-9]{40}$/.test(version)) throw new Error('Expected a full commit SHA
 const dist = join(root, 'dist');
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
-for (const file of ['index.html', 'style.css', 'script.js', 'bubble.js', 'bricks.js', 'wonguikung.js', '042 favicon.png', 'favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png', 'site.webmanifest', 'logo-042.png', 'Grupo 4.png', 'sun.svg', 'huevon_umb.png', 'huevon_move_umb.png', 'manz.png', 'escoba.png']) {
+for (const file of ['index.html', 'style.css', 'script.js', 'bubble.js', 'bricks.js', 'wonguikung.js', '042 favicon.png', 'favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png', 'site.webmanifest', 'logo-042.png', 'Grupo 4.png', 'sun.svg', 'huevon_umb.png', 'huevon_move_umb.png', 'manz.png', 'escoba.png', 'eyesopen.png', 'eyesclos.png']) {
   cpSync(join(root, file), join(dist, file));
 }
-for (const folder of ['fonts', 'audio']) cpSync(join(root, folder), join(dist, folder), { recursive: true });
+for (const folder of ['fonts', 'audio', 'covers']) cpSync(join(root, folder), join(dist, folder), { recursive: true });
 const script = readFileSync(join(dist, 'script.js'), 'utf8').replace(/const BUILD_VERSION='[^']*';/, `const BUILD_VERSION='${version}';`);
 const html = readFileSync(join(dist, 'index.html'), 'utf8').replace(/\?v=[a-f0-9]+/g, `?v=${version}`);
 writeFileSync(join(dist, 'script.js'), script);
