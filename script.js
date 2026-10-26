@@ -246,6 +246,17 @@ const menuOptions=[...menu.querySelectorAll('.menu-option')];
 const footerActions=document.querySelector('.footer-actions');
 const pageHeader=document.querySelector('header');
 let menuOpen=false,currentScreen='home',menuTaps=0;
+let presaveRevealed=false,presaveRevealing=false;
+function revealPresave(){
+ presaveRevealed=true;presaveRevealing=true;
+ const presaveButton=document.getElementById('presave');
+ presaveButton.inert=false;presaveButton.removeAttribute('aria-hidden');
+ menuToggle.classList.add('revealing');
+ footerActions.classList.remove('presave-collapsed');
+ menuToggle.setAttribute('aria-label','Abrir menú');
+ // Keep the mouth open for the complete reveal, then restore the smile.
+ setTimeout(()=>{presaveRevealing=false;menuToggle.classList.remove('revealing');},reducedMotion.matches?0:850);
+}
 function sizeMenu(){
  menu.style.setProperty('--menu-height',Math.max(0,footerActions.getBoundingClientRect().top-18)+'px');
 }
@@ -287,6 +298,8 @@ function resetHome(){
  paint();resize();
 }
 menuToggle.addEventListener('click',()=>{
+ if(!presaveRevealed){revealPresave();return;}
+ if(presaveRevealing)return;
  if(++menuTaps===6){
   menuTaps=0;currentScreen='bubble';
   for(const item of menuOptions){item.classList.remove('selected');item.removeAttribute('aria-current');}
@@ -357,8 +370,8 @@ function enter(){
  entranceHint.classList.remove('visible');
  resize();started=true;main.inert=false;main.removeAttribute('aria-hidden');main.classList.add('ready');loading.classList.add('done');
  loading.removeAttribute('tabindex');loading.setAttribute('aria-hidden','true');
- document.getElementById('play-pause').disabled ? document.getElementById('presave').focus({preventScroll:true}) : document.getElementById('play-pause').focus({preventScroll:true});
- startAudio();resume();
+ songVisibility.focus({preventScroll:true});
+ startAudio();resume();beginEyeHint();
 }
 loading.addEventListener('pointerup',event=>{if(event.button===0)enter();});
 loading.addEventListener('click',enter);
@@ -380,13 +393,24 @@ const TRACKS=[
 const songVisibility=document.getElementById('song-visibility');
 const songPanel=document.getElementById('song-panel');
 const trackCover=document.getElementById('track-cover');
-const closedEye=new Image();closedEye.src='eyesclos.png';
+const openEye=new Image();openEye.src='eyesopen.png';
+const eyeHint=document.getElementById('eye-hint');
+let eyeHintTimer=null,eyeTouched=false;
+function beginEyeHint(){
+ if(eyeTouched)return;
+ clearTimeout(eyeHintTimer);
+ eyeHintTimer=setTimeout(()=>{
+  if(!eyeTouched)eyeHint.classList.add('visible');
+ },10000);
+}
 songVisibility.addEventListener('click',()=>{
+ eyeTouched=true;clearTimeout(eyeHintTimer);eyeHint.classList.remove('visible');
  const visible=songVisibility.getAttribute('aria-expanded')!=='true';
  songVisibility.setAttribute('aria-expanded',String(visible));
  songVisibility.setAttribute('aria-label',visible?'Ocultar canción':'Mostrar canción');
  songVisibility.querySelector('img').src=visible?'eyesopen.png':'eyesclos.png';
- songPanel.hidden=!visible;
+ songPanel.inert=!visible;songPanel.setAttribute('aria-hidden',String(!visible));
+ pageHeader.classList.toggle('song-collapsed',!visible);
 });
 trackCover.addEventListener('error',()=>{trackCover.hidden=true;});
 const audio=document.getElementById('audio');

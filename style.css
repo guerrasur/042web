@@ -133,7 +133,7 @@ main.cadavers-open{transform:translateX(100%)}
 
 /* Keep the eye available when the song panel is hidden. */
 .song-header{width:fit-content;max-width:100%;margin-inline:auto;padding-inline:104px;min-height:88px}
-#song-visibility{position:absolute;left:44px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:52px;padding:0;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
+#song-visibility{position:absolute;left:66px;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:52px;padding:0;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
 #song-visibility img{display:block;width:44px;height:44px;object-fit:contain;pointer-events:none}
 #song-visibility:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:4px}
 #song-panel{min-width:0}
@@ -143,3 +143,22 @@ main.cadavers-open{transform:translateX(100%)}
 .song-heading{display:block}
 .song-description{min-width:0;overflow-wrap:anywhere}
 #track-cover{position:absolute;right:0;top:50%;transform:translateY(-50%);display:block;width:88px;height:88px;object-fit:cover}
+
+/* Entry reveals stay in the same rows as the expanded controls. */
+#song-visibility{transition:left .8s cubic-bezier(.22,.7,.25,1)}
+.song-header.song-collapsed #song-visibility{left:50%}
+#song-panel{opacity:1;visibility:visible;clip-path:inset(0);transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s}
+.song-collapsed #song-panel{opacity:0;visibility:hidden;clip-path:inset(0 100% 0 0);pointer-events:none;transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s .8s}
+#track-cover{transition:opacity .8s ease,visibility 0s}
+.song-collapsed #track-cover{opacity:0;visibility:hidden;transition:opacity .8s ease,visibility 0s .8s}
+#eye-hint{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:90vw;color:#fff;font-size:16px;line-height:1.3;opacity:0;pointer-events:none;transition:opacity 3s ease}
+#eye-hint.visible{opacity:1}
+.footer-actions{--menu-size:44px;position:relative;min-height:76px;padding-right:calc(var(--menu-size) + 12px)}
+.footer-actions #menu-toggle{position:absolute;left:calc(100% - var(--menu-size)/2);transform:translateX(-50%);transition:left .8s cubic-bezier(.22,.7,.25,1)}
+.footer-actions.presave-collapsed #menu-toggle{left:50%}
+.footer-actions #presave{opacity:1;visibility:visible;clip-path:inset(0);transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s,background .2s}
+.footer-actions.presave-collapsed #presave{opacity:0;visibility:hidden;clip-path:inset(0 0 0 100%);pointer-events:none;transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s .8s}
+#menu-toggle.revealing .menu-closed{display:none}
+#menu-toggle.revealing .menu-open{display:block}
+@media(max-width:380px){.footer-actions{--menu-size:40px;padding-right:calc(var(--menu-size) + 6px)}}
+@media(prefers-reduced-motion:reduce){#song-visibility,#song-panel,.song-collapsed #song-panel,#track-cover,.song-collapsed #track-cover,.footer-actions #menu-toggle,.footer-actions #presave,.footer-actions.presave-collapsed #presave,#eye-hint{transition:none}}
