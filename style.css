@@ -132,11 +132,14 @@ main.cadavers-open{transform:translateX(100%)}
 @media(prefers-reduced-motion:reduce){main,.wonguikung-cadavers,.wonguikung-cadavers.open{transition:none}}
 
 /* Keep the eye available when the song panel is hidden. */
-.song-header{padding-inline:100px;min-height:88px}
-#song-visibility{position:absolute;left:22px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:52px;padding:0;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
+.song-header{width:fit-content;max-width:100%;margin-inline:auto;padding-inline:104px;min-height:88px}
+#song-visibility{position:absolute;left:44px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:52px;padding:0;border:0;background:transparent;color:#fff;cursor:pointer;touch-action:manipulation}
 #song-visibility img{display:block;width:44px;height:44px;object-fit:contain;pointer-events:none}
 #song-visibility:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:4px}
-#song-panel[hidden],#track-cover[hidden]{display:none}
+#song-panel{min-width:0}
+/* Preserve geometry so closing the eye never moves the toggle. */
+#song-panel[hidden]{display:block;visibility:hidden;pointer-events:none}
+#track-cover[hidden]{display:none}
 .song-heading{display:block}
 .song-description{min-width:0;overflow-wrap:anywhere}
 #track-cover{position:absolute;right:0;top:50%;transform:translateY(-50%);display:block;width:88px;height:88px;object-fit:cover}
