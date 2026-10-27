@@ -164,3 +164,8 @@ main.cadavers-open{transform:translateX(100%)}
 #menu-toggle.revealing .menu-open{display:block}
 @media(max-width:380px){.footer-actions{--menu-size:40px;padding-right:calc(var(--menu-size) + 6px)}}
 @media(prefers-reduced-motion:reduce){#song-visibility,#song-panel,.song-collapsed #song-panel,#track-cover,.song-collapsed #track-cover,.footer-actions #menu-toggle,.footer-actions #presave,.footer-actions.presave-collapsed #presave,#eye-hint{transition:none}}
+
+/* Live waveform, kept between album metadata and transport controls. */
+#audio-waveform{display:block;width:100%;max-width:280px;height:32px;margin:10px auto 0;pointer-events:none;opacity:.7}
+#audio-waveform + .player-controls{margin-top:2px}
+a.menu-option{text-decoration:none}

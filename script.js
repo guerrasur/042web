@@ -309,8 +309,7 @@ menuToggle.addEventListener('click',()=>{
 });
 for(const option of menuOptions)option.addEventListener('click',()=>{
  if(option.dataset.screen==='music'){
-  audio.pause();syncPlayer();setMenu(false);
-  window.location.assign('https://0051.bandcamp.com/');return;
+  setMenu(false);return;
  }
  currentScreen=option.dataset.screen;
  for(const item of menuOptions){
@@ -438,9 +437,70 @@ songVisibility.addEventListener('click',()=>{
  songVisibility.querySelector('img').src=visible?'eyesopen.png':'eyesclos.png';
  songPanel.inert=!visible;songPanel.setAttribute('aria-hidden',String(!visible));
  pageHeader.classList.toggle('song-collapsed',!visible);
+ syncWaveform();
 });
 trackCover.addEventListener('error',()=>{trackCover.hidden=true;});
 const audio=document.getElementById('audio');
+// Analyse the playing element itself: no second download or simulated motion.
+const waveform=document.getElementById('audio-waveform');
+const waveformInk=waveform.getContext('2d');
+let audioContext=null,waveformAnalyser=null,waveformSamples=null,waveformFrame=0;
+function prepareWaveform(){
+ const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+ if(!AudioContextClass||!waveformInk)return;
+ if(!audioContext){
+  try{
+   const context=new AudioContextClass();
+   const analyser=context.createAnalyser();
+   analyser.fftSize=2048;
+   const source=context.createMediaElementSource(audio);
+   // Keep playback connected independently of the visualisation branch.
+   source.connect(context.destination);
+   source.connect(analyser);
+   audioContext=context;waveformAnalyser=analyser;
+   waveformSamples=new Uint8Array(analyser.fftSize);
+  }catch{return;}
+ }
+ // Called synchronously from the entrance/play gesture, including on iOS.
+ if(audioContext.state!=='running')audioContext.resume().catch(()=>{});
+}
+function drawWaveform(live=false){
+ if(!waveformInk)return;
+ const width=waveform.clientWidth,height=waveform.clientHeight;
+ if(!width||!height)return;
+ const scale=Math.min(window.devicePixelRatio||1,2);
+ const pixelWidth=Math.round(width*scale),pixelHeight=Math.round(height*scale);
+ if(waveform.width!==pixelWidth||waveform.height!==pixelHeight){
+  waveform.width=pixelWidth;waveform.height=pixelHeight;
+ }
+ waveformInk.setTransform(scale,0,0,scale,0,0);
+ waveformInk.clearRect(0,0,width,height);
+ waveformInk.strokeStyle='#fff';waveformInk.lineWidth=1.2;
+ waveformInk.lineJoin='round';waveformInk.lineCap='round';waveformInk.beginPath();
+ if(live){
+  waveformAnalyser.getByteTimeDomainData(waveformSamples);
+  for(let x=0;x<=width;x++){
+   const sample=waveformSamples[Math.min(waveformSamples.length-1,Math.floor(x/width*waveformSamples.length))];
+   const y=height/2+(sample-128)/128*(height/2-2);
+   if(x===0)waveformInk.moveTo(x,y);else waveformInk.lineTo(x,y);
+  }
+ }else{
+  waveformInk.moveTo(0,height/2);waveformInk.lineTo(width,height/2);
+ }
+ waveformInk.stroke();
+}
+function syncWaveform(){
+ cancelAnimationFrame(waveformFrame);waveformFrame=0;
+ const live=waveformAnalyser&&!audio.paused&&!audio.ended&&!audio.error&&!document.hidden&&
+  songVisibility.getAttribute('aria-expanded')==='true'&&!reducedMotion.matches;
+ drawWaveform(live);
+ if(live)waveformFrame=requestAnimationFrame(syncWaveform);
+}
+for(const event of ['playing','pause','ended','error','emptied','waiting'])audio.addEventListener(event,()=>syncWaveform());
+document.addEventListener('visibilitychange',syncWaveform);
+reducedMotion.addEventListener('change',syncWaveform);
+new ResizeObserver(()=>syncWaveform()).observe(waveform);
+
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');
 const playPause=document.getElementById('play-pause');
@@ -455,7 +515,10 @@ function syncPlayer(){
  document.getElementById('pause-icon').toggleAttribute('hidden',paused);
  document.getElementById('play-icon').toggleAttribute('hidden',!paused);
 }
-function startAudio(){if(TRACKS[trackIndex].src)audio.play().catch(syncPlayer);}
+function startAudio(){
+ if(!TRACKS[trackIndex].src)return;
+ prepareWaveform();audio.play().catch(syncPlayer);
+}
 function selectTrack(index){
  if(index<0||index>=TRACKS.length)return;
  audio.pause();trackIndex=index;
