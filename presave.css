@@ -6,7 +6,7 @@
 .presave-close{position:absolute;top:9px;right:9px;display:grid;place-items:center;width:36px;height:36px;padding:8px;border:0;background:none;color:#fff;opacity:.48;cursor:pointer}
 .presave-close svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
 .presave-close:hover,.presave-close:focus-visible{opacity:1}
-.presave-channels{display:flex;gap:12px;justify-content:center}
+.presave-channels{display:flex;flex-direction:column;gap:12px;width:min(100%,220px);margin:0 auto;justify-content:center}
 .presave-button,.presave-input{min-height:48px;border:1.25px solid #fff;border-radius:12px;background:#000;color:#fff;font:inherit;font-size:17px;line-height:1.3}
 .presave-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:11px 17px;cursor:pointer;touch-action:manipulation;transition:background .15s,transform .15s}
 .presave-channels .presave-button{flex:1;min-width:0}
