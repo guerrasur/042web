@@ -1,6 +1,4 @@
 'use strict';
-// Add the official pre-save URL here when available.
-const PRESAVE_URL = '';
 const loading = document.getElementById('loading');
 const main = document.getElementById('main');
 const entranceHint=document.getElementById('entrance-hint');
@@ -357,7 +355,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture'])arena.addEv
  if(name==='pointerup'&&!touch.moved)tapArena(event);
 });
 arena.addEventListener('click',event=>{if(performance.now()<arenaClickUntil)return;tapArena(event);});
-document.addEventListener('selectstart',event=>event.preventDefault());
+document.addEventListener('selectstart',event=>{if(!event.target.closest('input,textarea'))event.preventDefault();});
 new ResizeObserver(resize).observe(arena);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)for(const b of bodies)if(b.grab)finishGrab(b,{pointerId:b.grab.id,type:'pointercancel'});resume();});
 reducedMotion.addEventListener('change',()=>{resize();resume();});
@@ -375,9 +373,6 @@ loading.addEventListener('pointerup',event=>{if(event.button===0)enter();});
 loading.addEventListener('click',enter);
 loading.addEventListener('keydown',event=>{
  if(loaded&&(event.key==='Enter'||event.key===' ')){event.preventDefault();enter();}
-});
-document.getElementById('presave').addEventListener('click',()=>{
- if(PRESAVE_URL){window.location.assign(PRESAVE_URL);}else{document.getElementById('notice').hidden=false;}
 });
 
 // Add songs in order, using local MP3 paths or direct audio URLs.
@@ -566,7 +561,7 @@ syncEntrance();
 const BUILD_VERSION='e89cd0c50c4adf181dbc6426d8942cd0b1f3abae';
 let checkingUpdate=false;
 async function checkForUpdate(){
- if(checkingUpdate||document.hidden||BUILD_VERSION.startsWith('__'))return;
+ if(checkingUpdate||document.hidden||document.getElementById('presave-dialog')?.open||BUILD_VERSION.startsWith('__'))return;
  checkingUpdate=true;
  try{
   const versionURL=new URL('version.json',location.href);

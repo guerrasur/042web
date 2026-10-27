@@ -6,7 +6,7 @@ Landing estática para Meditación Guiada Para Perros.
 - Onda sonora blanca entre el álbum y los controles, obtenida del audio real; queda en reposo al pausar y respeta movimiento reducido.
 - Imagen Grupo 4 rebotando dentro del espacio libre, sin invadir título o botón.
 - Compatible con móvil, áreas seguras, cambios de orientación y movimiento reducido.
-- Editar `PRESAVE_URL` en `script.js` cuando esté disponible el enlace oficial.
+- El preguardado abre un popup negro para solicitar aviso por WhatsApp o mail. Guarda en una planilla privada mediante Google Apps Script; ver `apps-script/README.md` para configurar el receptor y agregar los sprites del galgo.
 - GitHub Pages se publica desde `.github/workflows/pages.yml` al actualizar `main`.
 
 ## Rendimiento

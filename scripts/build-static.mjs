@@ -9,7 +9,7 @@ if (!/^[a-f0-9]{40}$/.test(version)) throw new Error('Expected a full commit SHA
 const dist = join(root, 'dist');
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
-for (const file of ['index.html', 'style.css', 'script.js', 'bubble.js', 'bricks.js', 'wonguikung.js', '042 favicon.png', 'favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png', 'site.webmanifest', 'logo-042.png', 'Grupo 4.png', 'sun.svg', 'huevon_umb.png', 'huevon_move_umb.png', 'manz.png', 'escoba.png', 'eyesopen.png', 'eyesclos.png']) {
+for (const file of ['index.html', 'style.css', 'script.js', 'presave.css', 'presave.js', 'presave-config.js', 'bubble.js', 'bricks.js', 'wonguikung.js', '042 favicon.png', 'favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png', 'site.webmanifest', 'logo-042.png', 'Grupo 4.png', 'sun.svg', 'huevon_umb.png', 'huevon_move_umb.png', 'manz.png', 'escoba.png', 'eyesopen.png', 'eyesclos.png']) {
   cpSync(join(root, file), join(dist, file));
 }
 for (const folder of ['fonts', 'audio', 'covers', 'sprites']) cpSync(join(root, folder), join(dist, folder), { recursive: true });

@@ -22,6 +22,9 @@
 <script src="bricks.js?v=e89cd0c50c4adf181dbc6426d8942cd0b1f3abae" defer></script>
 <script src="wonguikung.js?v=e89cd0c50c4adf181dbc6426d8942cd0b1f3abae" defer></script>
 <script src="script.js?v=e89cd0c50c4adf181dbc6426d8942cd0b1f3abae" defer></script>
+<link rel="stylesheet" href="presave.css?v=e89cd0c50c4adf181dbc6426d8942cd0b1f3abae">
+<script src="presave-config.js?v=e89cd0c50c4adf181dbc6426d8942cd0b1f3abae" defer></script>
+<script src="presave.js?v=e89cd0c50c4adf181dbc6426d8942cd0b1f3abae" defer></script>
 </head>
 <body>
 <div class="loading is-loading" id="loading" role="status" aria-label="Cargando">
@@ -48,6 +51,32 @@
 </div></nav>
 <footer><div class="footer-actions presave-collapsed"><button id="presave" type="button" inert aria-hidden="true"><img src="sun.svg" alt="" aria-hidden="true"><span>Pre-guardá "Meditación Guiada Para Perros"</span></button><button id="menu-toggle" type="button" aria-label="Mostrar preguardado" aria-controls="site-menu" aria-expanded="false"><img class="menu-closed" src="huevon_umb.png" alt="" aria-hidden="true" draggable="false"><img class="menu-open" src="huevon_move_umb.png" alt="" aria-hidden="true" draggable="false"></button></div><p id="notice" role="status" hidden>El preguardado estará disponible próximamente.</p></footer>
 </main>
+<dialog id="presave-dialog" aria-labelledby="presave-title">
+<button class="presave-close" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+<div class="presave-content">
+<section id="presave-choice">
+<h2 id="presave-title">El EP sale el 11/11/26</h2>
+<p>Por donde querés ser notificadx ese día?</p>
+<div class="presave-channels">
+<button class="presave-button" type="button" data-channel="whatsapp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.3-4.8A8.5 8.5 0 1 1 20.5 11.7Z"/><path d="M8.1 7.6c-.5.4-.7 1-.5 1.7.7 2.6 2.6 4.6 5.3 5.6.7.2 1.4.1 1.9-.3l.8-1.1-2.5-1.3-.9 1c-1.4-.6-2.5-1.7-3.1-3.1l.8-.9-1-2.2Z"/></svg><span>Whatsapp</span></button>
+<button class="presave-button" type="button" data-channel="mail"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17V10a5 5 0 0 1 10 0v7Zm10-12h3a5 5 0 0 1 5 5v7h-8M8 17v5M17 12V3h3M6 13h4"/></svg><span>Mail</span></button>
+</div>
+</section>
+<section id="presave-entry" hidden>
+<h2 id="presave-entry-title"></h2>
+<form id="presave-form" novalidate>
+<label class="presave-sr-only" for="presave-contact" id="presave-contact-label">Contacto</label>
+<input id="presave-contact" class="presave-input" name="contact" aria-describedby="presave-error" required>
+<div class="presave-trap" aria-hidden="true" inert><label for="presave-website">Sitio web</label><input id="presave-website" name="website" tabindex="-1" autocomplete="off"></div>
+<p id="presave-error" class="presave-error" role="alert"></p>
+<button class="presave-button presave-submit" type="submit">Listo</button>
+</form>
+<button class="presave-back" type="button">Volver</button>
+</section>
+<section id="presave-thanks" hidden><h2>Gracias! Nos escucharemo pronto</h2></section>
+</div>
+<div class="presave-dog-lane" aria-hidden="true"><div class="presave-dog" hidden></div></div>
+</dialog>
 <noscript><style>.loading{display:none}main{opacity:1}#group{left:50%;top:50%;transform:translate(-50%,-50%)}</style></noscript>
 </body>
 </html>
