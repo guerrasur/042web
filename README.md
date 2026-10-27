@@ -13,7 +13,7 @@ Landing estática para Meditación Guiada Para Perros.
 
 - Equipos con hasta 4 núcleos, hasta 4 GB declarados o ahorro de datos usan juegos a 30 FPS y canvas a resolución 1×; el resto usa hasta 60 FPS y 2×.
 - Los juegos dejan de dibujar cuando están quietos, vuelven a activarse al apuntar/disparar y se detienen al ocultar la pestaña. Las colisiones conservan su cálculo continuo.
-- La onda real se dibuja como máximo a 15/30 FPS, sin consultar el tamaño del DOM en cada cuadro. Se detiene al pausar, ocultar el ojo o la pestaña.
+- La onda real conserva el detalle y la fluidez originales (2048 muestras y resolución de hasta 2×), independientemente del perfil del equipo. Se detiene al pausar, ocultar el ojo o la pestaña.
 - Las deformaciones de las caras son PNG precalculados y se descargan al usarse. Para regenerarlos: `python scripts/prepare-deformations.py` (Pillow y NumPy; no se necesitan para publicar).
 - La entrada no espera descargar el tema. El audio precarga solo metadatos antes de reproducir.
 - Validación: `node scripts/build-static.mjs && node --test tests/performance.test.cjs`.

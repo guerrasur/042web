@@ -23,7 +23,7 @@ const lowPower=Boolean(navigator.connection?.saveData||
  (navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4));
 const sitePerformance=window.SITE_PERFORMANCE=Object.freeze({
  lowPower,pixelRatio:Math.min(window.devicePixelRatio||1,lowPower?1:2),
- gameFrameMs:1000/(lowPower?30:60),waveformFrameMs:1000/(lowPower?15:30),
+ gameFrameMs:1000/(lowPower?30:60),
  planRate:lowPower?30:60
 });
 let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
@@ -443,8 +443,7 @@ const audio=document.getElementById('audio');
 // Analyse the playing element itself: no second download or simulated motion.
 const waveform=document.getElementById('audio-waveform');
 const waveformInk=waveform.getContext('2d');
-let audioContext=null,waveformAnalyser=null,waveformSamples=null,waveformFrame=0,waveformLast=0;
-let waveformWidth=0,waveformHeight=0;
+let audioContext=null,waveformAnalyser=null,waveformSamples=null,waveformFrame=0;
 function prepareWaveform(){
  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
  if(!AudioContextClass||!waveformInk)return;
@@ -452,7 +451,7 @@ function prepareWaveform(){
   try{
    const context=new AudioContextClass();
    const analyser=context.createAnalyser();
-   analyser.fftSize=lowPower?512:1024;
+   analyser.fftSize=2048;
    const source=context.createMediaElementSource(audio);
    // Keep playback connected independently of the visualisation branch.
    source.connect(context.destination);
@@ -466,9 +465,9 @@ function prepareWaveform(){
 }
 function drawWaveform(live=false){
  if(!waveformInk)return;
- const width=waveformWidth,height=waveformHeight;
+ const width=waveform.clientWidth,height=waveform.clientHeight;
  if(!width||!height)return;
- const scale=sitePerformance.pixelRatio;
+ const scale=Math.min(window.devicePixelRatio||1,2);
  const pixelWidth=Math.round(width*scale),pixelHeight=Math.round(height*scale);
  if(waveform.width!==pixelWidth||waveform.height!==pixelHeight){
   waveform.width=pixelWidth;waveform.height=pixelHeight;
@@ -489,29 +488,17 @@ function drawWaveform(live=false){
  }
  waveformInk.stroke();
 }
-function waveformIsLive(){
- return waveformAnalyser&&!audio.paused&&!audio.ended&&!audio.error&&!document.hidden&&
-  songVisibility.getAttribute('aria-expanded')==='true'&&!reducedMotion.matches;
-}
-function animateWaveform(now){
- waveformFrame=0;
- if(!waveformIsLive())return;
- if(!waveformLast||now-waveformLast>=sitePerformance.waveformFrameMs-1){
-  waveformLast=now;drawWaveform(true);
- }
- waveformFrame=requestAnimationFrame(animateWaveform);
-}
 function syncWaveform(){
- cancelAnimationFrame(waveformFrame);waveformFrame=0;waveformLast=0;
- const live=waveformIsLive();drawWaveform(live);
- if(live)waveformFrame=requestAnimationFrame(animateWaveform);
+ cancelAnimationFrame(waveformFrame);waveformFrame=0;
+ const live=waveformAnalyser&&!audio.paused&&!audio.ended&&!audio.error&&!document.hidden&&
+  songVisibility.getAttribute('aria-expanded')==='true'&&!reducedMotion.matches;
+ drawWaveform(live);
+ if(live)waveformFrame=requestAnimationFrame(syncWaveform);
 }
 for(const event of ['playing','pause','ended','error','emptied','waiting'])audio.addEventListener(event,()=>syncWaveform());
 document.addEventListener('visibilitychange',syncWaveform);
 reducedMotion.addEventListener('change',syncWaveform);
-new ResizeObserver(()=>{
- waveformWidth=waveform.clientWidth;waveformHeight=waveform.clientHeight;syncWaveform();
-}).observe(waveform);
+new ResizeObserver(()=>syncWaveform()).observe(waveform);
 
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');

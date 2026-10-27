@@ -63,7 +63,7 @@ test('hardware hints select the lighter profile and unknown hardware keeps norma
   assert.equal(context.window.SITE_PERFORMANCE.pixelRatio,expected?1:2);
  }
 });
-for(const lowPower of [true,false])test(`waveform throttles without reading layout per frame (low=${lowPower})`,()=>{
+for(const lowPower of [true,false])test(`waveform retains original detail and display cadence (low=${lowPower})`,()=>{
  const env=runtime();let reads=0,samples=0,connections=0,observer;
  const ink={setTransform(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){}};
  const canvas={getContext:()=>ink,get clientWidth(){reads++;return 240;},get clientHeight(){reads++;return 32;}};
@@ -71,11 +71,13 @@ for(const lowPower of [true,false])test(`waveform throttles without reading layo
  Object.assign(env.context,{lowPower,sitePerformance:{pixelRatio:1,waveformFrameMs:1000/(lowPower?15:30)},songVisibility:{getAttribute:()=>'true'},reducedMotion:{matches:false,addEventListener(){}},Uint8Array,
   ResizeObserver:class{constructor(callback){observer=callback;}observe(){}}});
  Object.assign(env.context.document,{getElementById:id=>id==='audio'?audio:canvas,addEventListener(){}});
+ env.context.window.devicePixelRatio=2;
  env.context.window.AudioContext=class{state='running';destination={};createAnalyser(){return{fftSize:0,getByteTimeDomainData(arr){samples++;arr.fill(128);arr[0]=192;}}}createMediaElementSource(){return{connect(){connections++;}}}};
  const section=app.slice(app.indexOf("const audio=document.getElementById('audio');"),app.indexOf("const previous=document.getElementById('previous');"));
  vm.runInContext(section,env.context);observer();
  vm.runInContext('prepareWaveform();prepareWaveform();syncWaveform()',env.context);
- env.run(1000);assert.equal(connections,2);assert(samples<= (lowPower?17:32));assert(samples>10);assert.equal(reads,2);
+ env.run(1000);assert.equal(connections,2);assert(samples>=119&&samples<=123);assert(reads>=240);
+ assert.equal(vm.runInContext("waveformAnalyser.fftSize",env.context),2048);assert.equal(canvas.width,480);
  audio.paused=true;vm.runInContext('syncWaveform()',env.context);assert.equal(env.frames.size,0);
  audio.paused=false;env.context.reducedMotion.matches=true;vm.runInContext('syncWaveform()',env.context);assert.equal(env.frames.size,0);
 });
