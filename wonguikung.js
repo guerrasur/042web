@@ -135,7 +135,7 @@
    if(!this.active||document.hidden||this.state.phase==='dead')return;
    const s=this.state,delays={hello:2800,question:800,thanks:1600};
    const untilPhase=delays[s.phase]===undefined?Infinity:s.phaseAt+delays[s.phase]-Date.now();
-   const delay=Math.max(1,Math.min(1000,untilPhase,s.lastFedAt+HUNGER-Date.now()));
+   const delay=Math.max(1,Math.min(untilPhase,s.lastFedAt+HUNGER-Date.now()));
    this.timer=setTimeout(()=>{this.tick();this.schedule();},delay);
   }
   render(){

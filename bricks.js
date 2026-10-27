@@ -75,16 +75,18 @@ class FaceBricks extends FaceShooter {
   this.canvas.focus({preventScroll:true});
  }
  pause(){
-  this.saveGame();this.active=false;cancelAnimationFrame(this.frame);this.last=0;
+  this.saveGame();this.active=false;cancelAnimationFrame(this.frame);this.frame=0;this.last=0;
   const pointer=this.pointer;this.pointer=null;
   if(pointer!==null&&this.canvas.hasPointerCapture(pointer))this.canvas.releasePointerCapture(pointer);
  }
- loop(){if(this.awaitingResume){cancelAnimationFrame(this.frame);return;}super.loop();}
+ loop(){if(this.awaitingResume){cancelAnimationFrame(this.frame);this.frame=0;return;}super.loop();}
+ isAnimating(){return Boolean(this.shot||this.descent>0||this.effects?.length);}
+ onIdle(){this.saveGame();}
 
  resize(){
   const oldWidth=this.width||1,oldHeight=this.height||1;
   this.width=this.canvas.clientWidth;this.height=this.canvas.clientHeight;
-  const ratio=Math.min(window.devicePixelRatio||1,2);this.canvas.width=Math.round(this.width*ratio);this.canvas.height=Math.round(this.height*ratio);this.ctx.setTransform(ratio,0,0,ratio,0,0);
+  const ratio=(window.SITE_PERFORMANCE?.pixelRatio||Math.min(window.devicePixelRatio||1,2));this.canvas.width=Math.round(this.width*ratio);this.canvas.height=Math.round(this.height*ratio);this.ctx.setTransform(ratio,0,0,ratio,0,0);
   this.size=Math.max(14,Math.min(24,this.width/17));this.ballRadius=this.size*.36;
   this.cols=6;this.gap=5;this.tile=Math.min(this.width/6,this.height/8.5);this.left=(this.width-this.tile*6)/2;
   this.launchY=this.height-this.size*.8;
@@ -92,6 +94,7 @@ class FaceBricks extends FaceShooter {
   for(const b of this.balls||[]){b.x*=this.width/oldWidth;b.y*=this.height/oldHeight;}
   this.last=0;this.rect=this.canvas.getBoundingClientRect();
   if(!this.awaitingResume&&!this.descent&&this.blocks?.some(b=>this.blockRect(b).y+this.tile>this.launchY-this.size))this.lose();
+  if(this.initialized)this.loop();
  }
  reset(){
   this.initialized=true;
@@ -111,7 +114,7 @@ class FaceBricks extends FaceShooter {
  fire(){
   if(!this.active||this.shot||this.over||this.descent>0)return;
   this.volleyColor=this.color;this.volleyAngle=this.angle;this.shot=true;this.elapsed=0;this.emitted=0;this.returned=0;this.volleyCount=this.count;this.pending=0;this.landing=null;this.balls=[];
-  this.emit(0);this.updateScore();
+  this.emit(0);this.updateScore();this.loop();
  }
  emit(born=this.elapsed){
   if(this.emitted>=this.volleyCount)return;

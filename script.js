@@ -17,6 +17,15 @@ loading.addEventListener('pointerdown',resetEntranceHint);
 loading.addEventListener('keydown',resetEntranceHint);
 const arena=document.getElementById('arena');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+// Conservative hints only: unknown hardware keeps the normal quality profile.
+const lowPower=Boolean(navigator.connection?.saveData||
+ (navigator.deviceMemory&&navigator.deviceMemory<=4)||
+ (navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4));
+const sitePerformance=window.SITE_PERFORMANCE=Object.freeze({
+ lowPower,pixelRatio:Math.min(window.devicePixelRatio||1,lowPower?1:2),
+ gameFrameMs:1000/(lowPower?30:60),waveformFrameMs:1000/(lowPower?15:30),
+ planRate:lowPower?30:60
+});
 let started=false,loaded=false,frame=0,last=0,maxX=0,maxY=0,radius=40;
 let plans=null,planStates=null;
 let shooter=null;
@@ -34,7 +43,7 @@ const bodies=heads.map((element,index)=>({element,image:element.querySelector('i
  active:index===0,inflation:0,burst:false,grab:null,suppressUntil:0,fragments:new Set(),deformation:null}));
 function tint(body){body.hue=(body.hue+70+Math.random()*140)%360;body.image.style.filter=`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`;}
 for(const body of bodies.slice(1))body.image.style.filter=`sepia(1) saturate(8) hue-rotate(${body.hue}deg) brightness(.95)`;
-function paint(){for(const b of bodies)b.element.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;}
+function paint(){for(const b of bodies)if(b.active&&!b.burst)b.element.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;}
 function snapshot(){return bodies.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,targetSpeed:b.targetSpeed,active:b.active,burst:b.burst,held:Boolean(b.grab)}));}
 function apply(states){states.forEach((s,i)=>{for(const key of ['x','y','vx','vy','targetSpeed'])bodies[i][key]=s[key];});}
 function wall(b){
@@ -87,24 +96,29 @@ function physics(states,dt){
 function stopPlans(){
  if(plans){
   const time=Math.min(Number(plans[0].currentTime||0)/1000,4);
-  const index=Math.min(480,Math.floor(time*120));
+  const index=Math.min(planStates.length-1,Math.floor(time*sitePerformance.planRate));
   const states=planStates[index].map(s=>({...s}));
-  physics(states,Math.max(0,time-index/120));apply(states);
+  const remaining=Math.max(0,time-index/sitePerformance.planRate),steps=Math.max(1,Math.ceil(remaining*120));
+  for(let i=0;i<steps;i++)physics(states,remaining/steps);apply(states);
   for(const animation of plans)animation.cancel();plans=null;planStates=null;paint();
  }
  for(const timer of colorTimers)clearTimeout(timer);colorTimers.length=0;
 }
 function playPlans(){
- const states=snapshot(),frames=bodies.map(()=>[]);planStates=[states.map(s=>({...s}))];
+ const states=snapshot(),frames=bodies.map(()=>[]),stride=120/sitePerformance.planRate;
+ planStates=[states.map(s=>({...s}))];
  for(let i=0;i<=480;i++){
   if(i){
    const hits=physics(states,1/120);
    for(const index of hits)colorTimers.push(setTimeout(()=>tint(bodies[index]),i/120*1000));
-   planStates.push(states.map(s=>({...s})));
   }
-  states.forEach((s,index)=>frames[index].push({transform:`translate3d(${s.x}px,${s.y}px,0)`,offset:i/480}));
+  // Physics remains at 120 Hz; store fewer compositor keyframes and snapshots.
+  if(i%stride===0){
+   if(i)planStates.push(states.map(s=>({...s})));
+   states.forEach((s,index)=>{if(s.active&&!s.burst)frames[index].push({transform:`translate3d(${s.x}px,${s.y}px,0)`,offset:i/480});});
+  }
  }
- plans=bodies.map((b,i)=>b.element.animate(frames[i],{duration:4000,easing:'linear',fill:'forwards'}));
+ plans=bodies.flatMap((b,i)=>frames[i].length?[b.element.animate(frames[i],{duration:4000,easing:'linear',fill:'forwards'})]:[]);
  plans[0].onfinish=()=>{stopPlans();resume();};
 }
 function animate(now){
@@ -119,7 +133,7 @@ function animate(now){
 }
 function resume(){
  cancelAnimationFrame(frame);frame=0;last=0;stopPlans();
- if(!started||document.hidden||shooter?.active||bricks?.active||wonguikung?.active)return;
+ if(!started||document.hidden||shooter?.active||bricks?.active||wonguikung?.active||!bodies.some(b=>b.active&&!b.burst))return;
  if(bodies.some(b=>b.grab)){frame=requestAnimationFrame(animate);return;}
  if(!reducedMotion.matches)playPlans();
 }
@@ -134,47 +148,32 @@ function resize(){
  });paint();resume();
 }
 const originalGroupSource=bodies[0].image.src;
-let groupPixels;
-const deformationSources=new Map([[0,originalGroupSource]]);
-function expandCenter(level){
- if(deformationSources.has(level))return deformationSources.get(level);
- const canvas=document.createElement('canvas');
- if(!groupPixels){
-  canvas.width=bodies[0].image.naturalWidth;canvas.height=bodies[0].image.naturalHeight;
-  const context=canvas.getContext('2d');context.drawImage(bodies[0].image,0,0);
-  groupPixels=context.getImageData(0,0,canvas.width,canvas.height);
- }
- const {width,height,data}=groupPixels;canvas.width=width;canvas.height=height;
- const context=canvas.getContext('2d'),output=context.createImageData(width,height),power=1+level*.45;
- for(let py=0;py<height;py++)for(let px=0;px<width;px++){
-  const nx=(px-(width-1)/2)/(width/2),ny=(py-(height-1)/2)/(height/2),r=Math.hypot(nx,ny);
-  const factor=r>0&&r<1?Math.pow(r,power-1):1;
-  const sx=Math.max(0,Math.min(width-1,(width-1)/2+nx*factor*width/2));
-  const sy=Math.max(0,Math.min(height-1,(height-1)/2+ny*factor*height/2));
-  const ix=Math.floor(sx),iy=Math.floor(sy),fx=sx-ix,fy=sy-iy;
-  const a=(iy*width+ix)*4,b=(iy*width+Math.min(ix+1,width-1))*4;
-  const c=(Math.min(iy+1,height-1)*width+ix)*4,d=(Math.min(iy+1,height-1)*width+Math.min(ix+1,width-1))*4;
-  for(let ch=0;ch<4;ch++)output.data[(py*width+px)*4+ch]=(data[a+ch]*(1-fx)+data[b+ch]*fx)*(1-fy)+(data[c+ch]*(1-fx)+data[d+ch]*fx)*fy;
- }
- context.putImageData(output,0,0);const source=canvas.toDataURL('image/png');deformationSources.set(level,source);return source;
-}
+// Pre-rendered with the same pixel mapping by scripts/prepare-deformations.py.
+// Only the requested stage is downloaded; no image processing runs on the device.
+function expandCenter(level){return level?`sprites/group-inflated-${level}.png`:originalGroupSource;}
 function inflate(body){
  if(!started||!body.active||body.burst||shooter?.active)return;stopPlans();body.deformation?.cancel();
  if(body.inflation===3){
   body.burst=true;body.image.style.visibility='hidden';body.element.style.pointerEvents='none';body.element.tabIndex=-1;
   if(!reducedMotion.matches){
    const width=body.element.clientWidth,height=body.element.clientHeight;
-   for(let row=0;row<4;row++)for(let col=0;col<4;col++){
+   const pieces=lowPower?2:4;
+   for(let row=0;row<pieces;row++)for(let col=0;col<pieces;col++){
     const fragment=document.createElement('span');fragment.className='group-fragment';
-    fragment.style.cssText=`left:${body.x+col*width/4}px;top:${body.y+row*height/4}px;width:${width/4+1}px;height:${height/4+1}px;background-image:url("${body.image.src}");background-size:${width}px ${height}px;background-position:${-col*width/4}px ${-row*height/4}px;filter:${body.image.style.filter}`;
+    fragment.style.cssText=`left:${body.x+col*width/pieces}px;top:${body.y+row*height/pieces}px;width:${width/pieces+1}px;height:${height/pieces+1}px;background-image:url("${body.image.src}");background-size:${width}px ${height}px;background-position:${-col*width/pieces}px ${-row*height/pieces}px;filter:${body.image.style.filter}`;
     arena.append(fragment);body.fragments.add(fragment);
-    const animation=fragment.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${(col-1.5)*55}px,${(row-1.5)*55}px) rotate(${(col-row)*30}deg) scale(.25)`,opacity:0}],{duration:650,easing:'cubic-bezier(.16,.7,.3,1)',fill:'forwards'});
+    const animation=fragment.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${(col-(pieces-1)/2)*55}px,${(row-(pieces-1)/2)*55}px) rotate(${(col-row)*30}deg) scale(.25)`,opacity:0}],{duration:650,easing:'cubic-bezier(.16,.7,.3,1)',fill:'forwards'});
     animation.onfinish=()=>{fragment.remove();body.fragments.delete(fragment);};
    }
   }
   resume();return;
  }else{body.inflation++;body.vx*=2;body.vy*=2;if(body.targetSpeed)body.targetSpeed*=2;}
- body.image.src=expandCenter(body.inflation);
+ const stage=body.inflation,source=expandCenter(stage),image=new Image();
+ image.src=source;
+ // Retain the previous face until the requested asset has decoded, even offline.
+ image.decode().then(()=>{
+  if(body.active&&!body.burst&&body.inflation===stage)body.image.src=source;
+ }).catch(()=>{});
  body.element.setAttribute('aria-label',body.inflation===3?'Explotar figura':'Inflar figura');
  if(!reducedMotion.matches)body.deformation=body.image.animate([{transform:'translateX(-2px)'},{transform:'translateX(2px)',offset:.35},{transform:'translateX(-1px)',offset:.7},{transform:'translateX(0)'}],{duration:480,easing:'ease-out'});
  resume();
@@ -230,7 +229,7 @@ function openGame(game){
  
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const current of [shooter,bricks]){
-  current.active=false;current.pointer=null;current.root.hidden=true;cancelAnimationFrame(current.frame);
+  current.active=false;current.pointer=null;current.root.hidden=true;cancelAnimationFrame(current.frame);current.frame=0;
  }
  for(const body of bodies){
   if(body.grab){clearTimeout(body.grab.timer);body.grab=null;body.element.classList.remove('dragging');}
@@ -271,7 +270,7 @@ function setMenu(open){
   wonguikung.cancelDrag();
   for(const game of [shooter,bricks]){
    if(game.pointer!==null&&game.canvas.hasPointerCapture(game.pointer))game.canvas.releasePointerCapture(game.pointer);
-   game.pointer=null;
+   game.pointer=null;game.loop();
   }
   (menuOptions.find(option=>option.dataset.screen===currentScreen)||menuOptions[0]).focus({preventScroll:true});
  }else menuToggle.focus({preventScroll:true});
@@ -281,7 +280,7 @@ function resetHome(){
  wonguikung.pause();
  stopPlans();cancelAnimationFrame(frame);frame=0;
  for(const game of [shooter,bricks]){
-  game.active=false;game.pointer=null;game.root.hidden=true;cancelAnimationFrame(game.frame);
+  game.active=false;game.pointer=null;game.root.hidden=true;cancelAnimationFrame(game.frame);game.frame=0;
  }
  bodies.forEach((body,index)=>{
   if(body.grab){clearTimeout(body.grab.timer);if(body.element.hasPointerCapture(body.grab.id))body.element.releasePointerCapture(body.grab.id);}
@@ -444,7 +443,8 @@ const audio=document.getElementById('audio');
 // Analyse the playing element itself: no second download or simulated motion.
 const waveform=document.getElementById('audio-waveform');
 const waveformInk=waveform.getContext('2d');
-let audioContext=null,waveformAnalyser=null,waveformSamples=null,waveformFrame=0;
+let audioContext=null,waveformAnalyser=null,waveformSamples=null,waveformFrame=0,waveformLast=0;
+let waveformWidth=0,waveformHeight=0;
 function prepareWaveform(){
  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
  if(!AudioContextClass||!waveformInk)return;
@@ -452,7 +452,7 @@ function prepareWaveform(){
   try{
    const context=new AudioContextClass();
    const analyser=context.createAnalyser();
-   analyser.fftSize=2048;
+   analyser.fftSize=lowPower?512:1024;
    const source=context.createMediaElementSource(audio);
    // Keep playback connected independently of the visualisation branch.
    source.connect(context.destination);
@@ -466,9 +466,9 @@ function prepareWaveform(){
 }
 function drawWaveform(live=false){
  if(!waveformInk)return;
- const width=waveform.clientWidth,height=waveform.clientHeight;
+ const width=waveformWidth,height=waveformHeight;
  if(!width||!height)return;
- const scale=Math.min(window.devicePixelRatio||1,2);
+ const scale=sitePerformance.pixelRatio;
  const pixelWidth=Math.round(width*scale),pixelHeight=Math.round(height*scale);
  if(waveform.width!==pixelWidth||waveform.height!==pixelHeight){
   waveform.width=pixelWidth;waveform.height=pixelHeight;
@@ -489,17 +489,29 @@ function drawWaveform(live=false){
  }
  waveformInk.stroke();
 }
-function syncWaveform(){
- cancelAnimationFrame(waveformFrame);waveformFrame=0;
- const live=waveformAnalyser&&!audio.paused&&!audio.ended&&!audio.error&&!document.hidden&&
+function waveformIsLive(){
+ return waveformAnalyser&&!audio.paused&&!audio.ended&&!audio.error&&!document.hidden&&
   songVisibility.getAttribute('aria-expanded')==='true'&&!reducedMotion.matches;
- drawWaveform(live);
- if(live)waveformFrame=requestAnimationFrame(syncWaveform);
+}
+function animateWaveform(now){
+ waveformFrame=0;
+ if(!waveformIsLive())return;
+ if(!waveformLast||now-waveformLast>=sitePerformance.waveformFrameMs-1){
+  waveformLast=now;drawWaveform(true);
+ }
+ waveformFrame=requestAnimationFrame(animateWaveform);
+}
+function syncWaveform(){
+ cancelAnimationFrame(waveformFrame);waveformFrame=0;waveformLast=0;
+ const live=waveformIsLive();drawWaveform(live);
+ if(live)waveformFrame=requestAnimationFrame(animateWaveform);
 }
 for(const event of ['playing','pause','ended','error','emptied','waiting'])audio.addEventListener(event,()=>syncWaveform());
 document.addEventListener('visibilitychange',syncWaveform);
 reducedMotion.addEventListener('change',syncWaveform);
-new ResizeObserver(()=>syncWaveform()).observe(waveform);
+new ResizeObserver(()=>{
+ waveformWidth=waveform.clientWidth;waveformHeight=waveform.clientHeight;syncWaveform();
+}).observe(waveform);
 
 const previous=document.getElementById('previous');
 const next=document.getElementById('next');
@@ -546,9 +558,8 @@ selectTrack(0);
 let entranceAssetsReady=false,entranceMinimumElapsed=false;
 function syncEntrance(){
  if(started)return;
- const audioReady=!TRACKS[0].src||audio.readyState>=HTMLMediaElement.HAVE_FUTURE_DATA||Boolean(audio.error);
  const wasLoaded=loaded;
- loaded=entranceMinimumElapsed&&entranceAssetsReady&&audioReady;
+ loaded=entranceMinimumElapsed&&entranceAssetsReady;
  if(loaded!==wasLoaded)resetEntranceHint();
  loading.classList.toggle('is-loading',!loaded);
  loading.style.cursor=loaded?'pointer':'default';
@@ -559,13 +570,7 @@ function syncEntrance(){
 for(const event of ['loadeddata','canplay','canplaythrough','progress','waiting','stalled','error','emptied'])audio.addEventListener(event,syncEntrance);
 Promise.all(assets).then(()=>{
  entranceAssetsReady=true;syncEntrance();
- // Prepare the three deformation stages during loading, before the first tap.
- let stage=1;
- const warm=()=>{
-  if(bodies[0].image.naturalWidth){try{expandCenter(stage);}catch{/* A later tap can retry. */}}
-  if(++stage<=3)setTimeout(warm,24);
- };
- setTimeout(warm,0);
+
 });
 setTimeout(()=>{entranceMinimumElapsed=true;syncEntrance();},3000);
 syncEntrance();
