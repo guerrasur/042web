@@ -558,7 +558,7 @@ setTimeout(()=>{entranceMinimumElapsed=true;syncEntrance();},3000);
 syncEntrance();
 
 // Replaced with the commit SHA by the Pages build, for every deployment.
-const BUILD_VERSION='45c75008efde3143d2f8d34755544dcf04f165d2';
+const BUILD_VERSION='a92036df31734792aef0a40d25a3fc7bc70ad57e';
 let checkingUpdate=false;
 async function checkForUpdate(){
  if(checkingUpdate||document.hidden||document.getElementById('presave-dialog')?.open||BUILD_VERSION.startsWith('__'))return;
