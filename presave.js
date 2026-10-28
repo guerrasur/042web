@@ -7,6 +7,7 @@
  const choice=document.getElementById('presave-choice');
  const entry=document.getElementById('presave-entry');
  const thanks=document.getElementById('presave-thanks');
+ const credit=dialog.querySelector('.presave-credit');
  const title=document.getElementById('presave-entry-title');
  const contact=document.getElementById('presave-contact');
  const label=document.getElementById('presave-contact-label');
@@ -21,7 +22,7 @@
  let walk=null,stepTimer=0,lapTimer=0,step=0,dogRun=0;
 
  function show(stage){
-  choice.hidden=stage!=='choice';entry.hidden=stage!=='entry';thanks.hidden=stage!=='thanks';
+  choice.hidden=stage!=='choice';entry.hidden=stage!=='entry';thanks.hidden=stage!=='thanks';credit.hidden=stage!=='thanks';
   dialog.setAttribute('aria-labelledby',stage==='choice'?'presave-title':stage==='entry'?'presave-entry-title':'presave-thanks');
  }
  function setBusy(value){
