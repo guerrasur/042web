@@ -13,6 +13,6 @@ Cada registro conserva fecha, canal, contacto y estado `Pendiente`. La columna `
 
 ## Galgo
 
-Agregar los archivos transparentes `sprites/galgo-1.png` y `sprites/galgo-2.png`, con el galgo mirando a la derecha y ambos en un lienzo del mismo tamaño. No se incluye un dibujo provisional. Hasta tener los dos, se reserva el recorrido sin mostrar imágenes rotas.
+Los sprites originales de Sofía Cano están en `sprites/galgo-1.png` y `sprites/galgo-2.png`, mirando a la derecha y conservando el mismo lienzo transparente. Sus URLs incluyen una versión para evitar reutilizar respuestas antiguas. El crédito «Galgo por Sofía Cano» aparece solamente debajo del agradecimiento, en blanco al 48 % y a 12 px.
 
 La velocidad inicial es 28 px/s y se ajusta con `dogSpeed` en `presave-config.js`. Cambia de sprite cada 500 ms, sale por la derecha, espera 1 segundo y vuelve a entrar por la izquierda. El contenedor persiste al cambiar de pantalla. Solo se anima mientras el popup y la pestaña están visibles; con movimiento reducido se muestra quieto.
