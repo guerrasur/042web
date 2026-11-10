@@ -46,3 +46,6 @@
 .release-platform[aria-disabled=true]{opacity:.45;cursor:default}
 .release-platform[aria-disabled=true]:active{transform:none}
 #presave-dialog a:focus-visible{outline:2px solid #fff;outline-offset:4px}
+
+.release-about{background:#fa8429;color:#080808;border-color:#fa8429;text-decoration:none}
+.release-about:hover{background:#ff963f;border-color:#ff963f}

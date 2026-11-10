@@ -10,7 +10,8 @@
  const credit=dialog.querySelector('.presave-credit');
  const release=document.getElementById('release-listen');
  const releaseAt=Date.parse(config.releaseAt);
- const isReleased=()=>Number.isFinite(releaseAt)&&Date.now()>=releaseAt;
+ const previewRelease=new URLSearchParams(window.location?.search||'').get('ep')==='1';
+ const isReleased=()=>previewRelease||(Number.isFinite(releaseAt)&&Date.now()>=releaseAt);
  const title=document.getElementById('presave-entry-title');
  const contact=document.getElementById('presave-contact');
  const label=document.getElementById('presave-contact-label');

@@ -74,7 +74,7 @@ function popup(fetch,options={}){
  el['presave-dialog'].querySelector=selector=>({'.presave-credit':credit,'.presave-close':close,'.presave-back':back,'.presave-dog':dog,'.presave-dog-lane':lane,'[data-channel]':channels[0]}[selector]);
  el['presave-dialog'].querySelectorAll=()=>channels;
  el['presave-form'].querySelector=()=>submit;
- const context=vm.createContext({window:{PRESAVE_CONFIG:{...options.config,endpoint:'https://script.google.com/macros/s/test/exec',dogSprites:[]},matchMedia:()=>({matches:false,addEventListener(){}})},document,Image:class{},AbortController,Date:Clock,URL,setTimeout:options.now===undefined?setTimeout:(callback,delay)=>{timers.push({callback,delay});return timers.length},clearTimeout,fetch});
+ const context=vm.createContext({window:{PRESAVE_CONFIG:{...options.config,endpoint:'https://script.google.com/macros/s/test/exec',dogSprites:[]},matchMedia:()=>({matches:false,addEventListener(){}})},document,Image:class{},AbortController,Date:Clock,URL,URLSearchParams,setTimeout:options.now===undefined?setTimeout:(callback,delay)=>{timers.push({callback,delay});return timers.length},clearTimeout,fetch});
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../presave.js'),'utf8'),context);
  return {el,close,submit,back,channels,credit,links,triggerLabel,timers,setNow:value=>{now=value},open:()=>el.presave.emit('click'),choose:channel=>channels[channel==='whatsapp'?0:1].emit('click'),save:()=>el['presave-form'].emit('submit'),type:async value=>{const input=el['presave-contact'];input.value=value;input.selectionStart=input.selectionEnd=value.length;await input.emit('input')}};
 }
