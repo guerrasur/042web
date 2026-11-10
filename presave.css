@@ -34,3 +34,15 @@
 .presave-trap,.presave-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-width:350px){#presave-dialog{padding-right:18px;padding-left:18px}.presave-channels{gap:9px}.presave-button{padding-right:12px;padding-left:12px;font-size:16px}.presave-dog-lane{margin-left:-18px;margin-right:-18px}#presave-contact[type=email]{font-size:16px;letter-spacing:-.4px}}
 @media(prefers-reduced-motion:reduce){.presave-button{transition:none}}
+
+.release-platforms{display:flex;flex-direction:column;gap:10px;margin:24px auto 20px;width:100%;max-width:280px}
+.release-platform{text-decoration:none;border-color:var(--platform-color,#fff);box-shadow:inset 3px 0 var(--platform-color,#fff);color:#fff}
+.release-platform[data-platform=spotify]{--platform-color:#1ed760}
+.release-platform[data-platform=youtube]{--platform-color:#ff4545}
+.release-platform[data-platform=youtubeMusic]{--platform-color:#ff8f8f}
+.release-platform[data-platform=deezer]{--platform-color:#b68cff}
+.release-platform[data-platform=appleMusic]{--platform-color:#fa6880}
+.release-platform[data-platform=bandcamp]{--platform-color:#65bed2}
+.release-platform[aria-disabled=true]{opacity:.45;cursor:default}
+.release-platform[aria-disabled=true]:active{transform:none}
+#presave-dialog a:focus-visible{outline:2px solid #fff;outline-offset:4px}

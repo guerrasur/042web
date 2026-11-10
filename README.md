@@ -44,3 +44,9 @@ Abrir Cloud Shell en la consola de Firebase con la cuenta propietaria del sitio 
 ```
 
 El asistente busca `lucio42.web.app` entre los sitios de los proyectos accesibles, prepara la versión actual y publica únicamente Hosting. Si no encuentra el sitio o hay un error de acceso, se detiene y muestra el motivo.
+
+## Lanzamiento del EP — 11/11/2026
+
+`presave-config.js` cambia automáticamente el botón y el recuadro a las 00:00 de Argentina del 11/11/2026, incluso si la página quedó abierta. Conserva el galgo y su crédito. Antes de esa fecha sigue funcionando el registro de avisos.
+
+Completar los seis `releaseLinks` con las URLs HTTPS directas del EP antes de publicar: Spotify, YouTube (Visualizer), YouTube Music, Deezer, Apple Music y Bandcamp. Un enlace vacío permanece deshabilitado. No publicar esta preparación con destinos vacíos.

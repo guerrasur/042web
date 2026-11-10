@@ -1,4 +1,4 @@
-/* Release reminders. The private contact list is never read by the browser. */
+/* Release reminders and EP listening links. */
 'use strict';
 (()=>{
  const config=window.PRESAVE_CONFIG||{};
@@ -8,6 +8,9 @@
  const entry=document.getElementById('presave-entry');
  const thanks=document.getElementById('presave-thanks');
  const credit=dialog.querySelector('.presave-credit');
+ const release=document.getElementById('release-listen');
+ const releaseAt=Date.parse(config.releaseAt);
+ const isReleased=()=>Number.isFinite(releaseAt)&&Date.now()>=releaseAt;
  const title=document.getElementById('presave-entry-title');
  const contact=document.getElementById('presave-contact');
  const label=document.getElementById('presave-contact-label');
@@ -22,8 +25,10 @@
  let walk=null,stepTimer=0,lapTimer=0,step=0,dogRun=0;
 
  function show(stage){
-  choice.hidden=stage!=='choice';entry.hidden=stage!=='entry';thanks.hidden=stage!=='thanks';credit.hidden=stage!=='thanks';
-  dialog.setAttribute('aria-labelledby',stage==='choice'?'presave-title':stage==='entry'?'presave-entry-title':'presave-thanks');
+  if(stage==='choice'&&isReleased())stage='release';
+  if(release)release.hidden=stage!=='release';
+  choice.hidden=stage!=='choice';entry.hidden=stage!=='entry';thanks.hidden=stage!=='thanks';credit.hidden=stage!=='thanks'&&stage!=='release';
+  dialog.setAttribute('aria-labelledby',stage==='release'?'release-title':stage==='choice'?'presave-title':stage==='entry'?'presave-entry-title':'presave-thanks');
  }
  function setBusy(value){
   busy=value;submit.disabled=value;back.disabled=value;contact.readOnly=value;
@@ -103,9 +108,33 @@
   dog.style.transform='';stepTimer=setTimeout(dogStep,500);dogLap();
  }
 
+ // An unset destination stays non-interactive until its direct EP URL is supplied.
+ if(release)release.querySelectorAll('[data-platform]').forEach(link=>{
+  const url=config.releaseLinks?.[link.dataset.platform];
+  if(!url)return;
+  try{
+   const parsed=new URL(url);
+   if(parsed.protocol!=='https:')return;
+   link.href=parsed.href;link.target='_blank';link.rel='noopener noreferrer';
+   link.removeAttribute('aria-disabled');
+  }catch{/* Ignore an invalid destination rather than opening a broken link. */}
+ });
+ function syncRelease(){
+  if(!Number.isFinite(releaseAt))return;
+  if(!isReleased()){
+   setTimeout(syncRelease,Math.min(releaseAt-Date.now(),86400000));return;
+  }
+  trigger.querySelector('span').textContent='Escuchá “Meditación Guiada Para Perros”';
+  document.getElementById('menu-toggle').setAttribute('aria-label','Mostrar opciones de escucha');
+  if(dialog.open){show('choice');dialog.querySelector('.presave-close').focus({preventScroll:true});}
+ }
+ syncRelease();
+
  trigger.addEventListener('click',()=>{
   session++;setBusy(false);error.textContent='';contact.value='';show('choice');
-  dialog.showModal();dialog.querySelector('[data-channel]').focus({preventScroll:true});startDog();
+  dialog.showModal();
+  (isReleased()?release.querySelector('a[href]')||dialog.querySelector('.presave-close'):dialog.querySelector('[data-channel]')).focus({preventScroll:true});
+  startDog();
  });
  dialog.querySelector('.presave-close').addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{session++;stopDog();trigger.focus({preventScroll:true});});

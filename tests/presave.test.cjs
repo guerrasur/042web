@@ -46,7 +46,7 @@ test('public health check does not expose private contacts or sheet identifiers'
  assert.deepEqual(app.context.doGet(),{ok:true,service:'042-release-reminders'});
 });
 
-function popup(fetch){
+function popup(fetch,options={}){
  class Element {
   constructor(){this.events={};this.attrs={};this.hidden=false;this.value='';this.selectionStart=this.selectionEnd=0;this.style={};}
   addEventListener(type,callback){(this.events[type]??=[]).push(callback)}
@@ -57,17 +57,26 @@ function popup(fetch){
   showModal(){this.open=true}close(){this.open=false;this.emit('close')}
   get validity(){return {valid:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value)}}
  }
- const names=['presave-dialog','presave','presave-choice','presave-entry','presave-thanks','presave-entry-title','presave-contact','presave-contact-label','presave-form','presave-error','presave-website'];
+ const names=['release-listen','menu-toggle','presave-dialog','presave','presave-choice','presave-entry','presave-thanks','presave-entry-title','presave-contact','presave-contact-label','presave-form','presave-error','presave-website'];
  const el=Object.fromEntries(names.map(name=>[name,new Element()]));
- const close=new Element(),back=new Element(),submit=new Element(),dog=new Element(),lane=new Element();
+ const credit=new Element(),close=new Element(),back=new Element(),submit=new Element(),dog=new Element(),lane=new Element();
  const channels=['whatsapp','mail'].map(channel=>Object.assign(new Element(),{dataset:{channel}}));
+ const links=Array.from({length:6},(_,i)=>Object.assign(new Element(),{dataset:{platform:['spotify','youtube','youtubeMusic','deezer','appleMusic','bandcamp'][i]}}));
+ const triggerLabel=new Element();
+ el.presave.querySelector=()=>triggerLabel;
+ el['release-listen'].querySelectorAll=()=>links;
+ el['release-listen'].querySelector=()=>links.find(link=>link.href);
  const document={getElementById:id=>el[id],hidden:false,addEventListener(){}};
- el['presave-dialog'].querySelector=selector=>({'.presave-close':close,'.presave-back':back,'.presave-dog':dog,'.presave-dog-lane':lane,'[data-channel]':channels[0]}[selector]);
+ let now=options.now??0;
+ const timers=[];
+ class Clock extends Date{static now(){return now}}
+
+ el['presave-dialog'].querySelector=selector=>({'.presave-credit':credit,'.presave-close':close,'.presave-back':back,'.presave-dog':dog,'.presave-dog-lane':lane,'[data-channel]':channels[0]}[selector]);
  el['presave-dialog'].querySelectorAll=()=>channels;
  el['presave-form'].querySelector=()=>submit;
- const context=vm.createContext({window:{PRESAVE_CONFIG:{endpoint:'https://script.google.com/macros/s/test/exec',dogSprites:[]},matchMedia:()=>({matches:false,addEventListener(){}})},document,Image:class{},AbortController,setTimeout,clearTimeout,fetch});
+ const context=vm.createContext({window:{PRESAVE_CONFIG:{...options.config,endpoint:'https://script.google.com/macros/s/test/exec',dogSprites:[]},matchMedia:()=>({matches:false,addEventListener(){}})},document,Image:class{},AbortController,Date:Clock,URL,setTimeout:options.now===undefined?setTimeout:(callback,delay)=>{timers.push({callback,delay});return timers.length},clearTimeout,fetch});
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../presave.js'),'utf8'),context);
- return {el,close,submit,back,channels,open:()=>el.presave.emit('click'),choose:channel=>channels[channel==='whatsapp'?0:1].emit('click'),save:()=>el['presave-form'].emit('submit'),type:async value=>{const input=el['presave-contact'];input.value=value;input.selectionStart=input.selectionEnd=value.length;await input.emit('input')}};
+ return {el,close,submit,back,channels,credit,links,triggerLabel,timers,setNow:value=>{now=value},open:()=>el.presave.emit('click'),choose:channel=>channels[channel==='whatsapp'?0:1].emit('click'),save:()=>el['presave-form'].emit('submit'),type:async value=>{const input=el['presave-contact'];input.value=value;input.selectionStart=input.selectionEnd=value.length;await input.emit('input')}};
 }
 test('popup formats phones and waits for acknowledged storage before thanking',async()=>{
  let resolve,body;
@@ -95,4 +104,22 @@ test('close remains available during saving and stale results do not overwrite a
  await ui.open();resolve({ok:true,json:async()=>({ok:true})});await saving;
  assert.equal(ui.el['presave-choice'].hidden,false);assert.equal(ui.el['presave-thanks'].hidden,true);
  await ui.close.emit('click');
+});
+
+test('release switches at Argentina midnight and an open reminder becomes the EP panel',async()=>{
+ const midnight=Date.parse('2026-11-11T00:00:00-03:00');
+ const ui=popup(()=>{throw new Error('Release panel must not submit contact data')},{now:midnight-1000,config:{releaseAt:'2026-11-11T00:00:00-03:00',releaseLinks:{spotify:'https://open.spotify.com/album/example'}}});
+ assert.equal(ui.timers[0].delay,1000);
+ await ui.open();assert.equal(ui.el['release-listen'].hidden,true);
+ ui.setNow(midnight);ui.timers[0].callback();
+ assert.equal(ui.triggerLabel.textContent,'Escuchá “Meditación Guiada Para Perros”');
+ assert.equal(ui.el['presave-choice'].hidden,true);assert.equal(ui.el['release-listen'].hidden,false);
+ assert.equal(ui.el['presave-dialog'].attrs['aria-labelledby'],'release-title');assert.equal(ui.credit.hidden,false);
+ await ui.close.emit('click');await ui.open();assert.equal(ui.el['release-listen'].hidden,false);
+});
+test('release links accept HTTPS destinations and leave missing or unsafe destinations inactive',()=>{
+ const ui=popup(()=>{},{now:Date.parse('2026-11-11T03:00:00Z'),config:{releaseAt:'2026-11-11T00:00:00-03:00',releaseLinks:{spotify:'https://open.spotify.com/album/example',youtube:'javascript:alert(1)',deezer:'broken'}}});
+ assert.equal(ui.links[0].href,'https://open.spotify.com/album/example');
+ assert.equal(ui.links[0].target,'_blank');assert.equal(ui.links[0].rel,'noopener noreferrer');
+ for(const link of ui.links.slice(1))assert.equal(link.href,undefined);
 });
