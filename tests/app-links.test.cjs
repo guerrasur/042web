@@ -24,7 +24,7 @@ test('Android intents select each app and preserve the HTTPS fallback without ti
   'https://youtu.be/30dYncV5_Bs?si=share':'com.google.android.youtube',
   'https://music.youtube.com/playlist?list=example':'com.google.android.apps.youtube.music',
   'https://open.spotify.com/album/example':'com.spotify.music',
-  'https://www.deezer.com/album/123':'deezer.android.app',
+  'https://tidal.com/browse/album/123':'com.aspiro.tidal',
   'https://music.apple.com/ar/album/example/123':'com.apple.android.music',
   'https://0051.bandcamp.com/':'com.bandcamp.android',
   'https://ok.ru/profile/910453455641/video/14402533919257':'ru.ok.android'

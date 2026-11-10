@@ -61,7 +61,7 @@ function popup(fetch,options={}){
  const el=Object.fromEntries(names.map(name=>[name,new Element()]));
  const credit=new Element(),close=new Element(),back=new Element(),submit=new Element(),dog=new Element(),lane=new Element();
  const channels=['whatsapp','mail'].map(channel=>Object.assign(new Element(),{dataset:{channel}}));
- const links=Array.from({length:6},(_,i)=>Object.assign(new Element(),{dataset:{platform:['spotify','youtube','youtubeMusic','deezer','appleMusic','bandcamp'][i]}}));
+ const links=Array.from({length:6},(_,i)=>Object.assign(new Element(),{dataset:{platform:['spotify','youtube','youtubeMusic','tidal','appleMusic','bandcamp'][i]}}));
  const triggerLabel=new Element();
  el.presave.querySelector=()=>triggerLabel;
  el['release-listen'].querySelectorAll=()=>links;
@@ -118,7 +118,7 @@ test('release switches at Argentina midnight and an open reminder becomes the EP
  await ui.close.emit('click');await ui.open();assert.equal(ui.el['release-listen'].hidden,false);
 });
 test('release links accept HTTPS destinations and leave missing or unsafe destinations inactive',()=>{
- const ui=popup(()=>{},{now:Date.parse('2026-11-11T03:00:00Z'),config:{releaseAt:'2026-11-11T00:00:00-03:00',releaseLinks:{spotify:'https://open.spotify.com/album/example',youtube:'javascript:alert(1)',deezer:'broken'}}});
+ const ui=popup(()=>{},{now:Date.parse('2026-11-11T03:00:00Z'),config:{releaseAt:'2026-11-11T00:00:00-03:00',releaseLinks:{spotify:'https://open.spotify.com/album/example',youtube:'javascript:alert(1)',tidal:'broken'}}});
  assert.equal(ui.links[0].href,'https://open.spotify.com/album/example');
  assert.equal(ui.links[0].target,'_blank');assert.equal(ui.links[0].rel,'noopener noreferrer');
  for(const link of ui.links.slice(1))assert.equal(link.href,undefined);

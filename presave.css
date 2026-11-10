@@ -40,7 +40,7 @@
 .release-platform[data-platform=spotify]{--platform-color:#1ed760}
 .release-platform[data-platform=youtube]{--platform-color:#ff4545}
 .release-platform[data-platform=youtubeMusic]{--platform-color:#ff8f8f}
-.release-platform[data-platform=deezer]{--platform-color:#b68cff}
+.release-platform[data-platform=tidal]{--platform-color:#b68cff}
 .release-platform[data-platform=appleMusic]{--platform-color:#fa6880}
 .release-platform[data-platform=bandcamp]{--platform-color:#65bed2}
 .release-platform[aria-disabled=true]{opacity:.45;cursor:default}

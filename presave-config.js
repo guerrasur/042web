@@ -9,7 +9,7 @@ window.PRESAVE_CONFIG=Object.freeze({
   spotify:'',
   youtube:'https://youtu.be/30dYncV5_Bs?si=QqSE8o5bc42YFjrF',
   youtubeMusic:'',
-  deezer:'',
+  tidal:'',
   appleMusic:'',
   bandcamp:''
  }),

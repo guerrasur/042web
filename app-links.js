@@ -7,7 +7,9 @@
   'youtube.com':'com.google.android.youtube',
   'music.youtube.com':'com.google.android.apps.youtube.music',
   'open.spotify.com':'com.spotify.music',
-  'deezer.com':'deezer.android.app',
+  'tidal.com':'com.aspiro.tidal',
+  'listen.tidal.com':'com.aspiro.tidal',
+  'share.tidal.com':'com.aspiro.tidal',
   'music.apple.com':'com.apple.android.music',
   'bandcamp.com':'com.bandcamp.android',
   'ok.ru':'ru.ok.android'
