@@ -21,6 +21,7 @@
  const back=dialog.querySelector('.presave-back');
  const dog=dialog.querySelector('.presave-dog');
  const lane=dialog.querySelector('.presave-dog-lane');
+ const aboutDialog=document.getElementById('about-dialog');
  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
  let channel='',session=0,busy=false,dogImages=null,dogLoading=null;
  let walk=null,stepTimer=0,lapTimer=0,step=0,dogRun=0;
@@ -80,12 +81,12 @@
   if(walk){walk.onfinish=null;walk.cancel();walk=null;}
  }
  function dogStep(){
-  if(!dogImages||!dialog.open||document.hidden||reduced.matches)return;
+  if(!dogImages||!dialog.open||aboutDialog?.open||document.hidden||reduced.matches)return;
   step=1-step;dogImages[0].hidden=step!==0;dogImages[1].hidden=step!==1;
   stepTimer=setTimeout(dogStep,500);
  }
  function dogLap(){
-  if(!dogImages||!dialog.open||document.hidden||reduced.matches)return;
+  if(!dogImages||!dialog.open||aboutDialog?.open||document.hidden||reduced.matches)return;
   dog.hidden=false;
   const distance=lane.clientWidth+dog.clientWidth;
   const duration=distance/Math.max(10,Number(config.dogSpeed)||28)*1000;
@@ -103,7 +104,7 @@
    }).catch(()=>{/* The artist's two sprites can be added later without a broken image. */});
   }
   await dogLoading;
-  if(run!==dogRun||!dogImages||!dialog.open||document.hidden)return;
+  if(run!==dogRun||!dogImages||!dialog.open||aboutDialog?.open||document.hidden)return;
   step=0;dogImages[0].hidden=false;dogImages[1].hidden=true;dog.hidden=false;
   if(reduced.matches){dog.style.transform='translateX(22px)';return;}
   dog.style.transform='';stepTimer=setTimeout(dogStep,500);dogLap();
@@ -141,6 +142,9 @@
  dialog.addEventListener('close',()=>{session++;stopDog();trigger.focus({preventScroll:true});});
  back.addEventListener('click',()=>{show('choice');dialog.querySelector('[data-channel]').focus({preventScroll:true});});
  dialog.querySelectorAll('[data-channel]').forEach(button=>button.addEventListener('click',()=>choose(button.dataset.channel)));
+ if(aboutDialog){
+  new MutationObserver(()=>{if(aboutDialog.open)stopDog();else if(dialog.open)startDog();}).observe(aboutDialog,{attributes:true,attributeFilter:['open']});
+ }
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopDog();else if(dialog.open)startDog();});
  reduced.addEventListener('change',()=>{if(dialog.open)startDog();});
 

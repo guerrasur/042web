@@ -2,6 +2,8 @@
 (()=>{
  const frame=document.getElementById('about-frame');
  const text=document.getElementById('about-text');
+ const about=document.getElementById('about-dialog');
+ const open=document.querySelector('.release-about');
  let pending=0;
  function fit(){
   pending=0;
@@ -22,11 +24,21 @@
  window.addEventListener('resize',schedule);
  document.fonts.ready.then(schedule);
  schedule();
- document.getElementById('about-back').addEventListener('click',event=>{
-  if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-  try{
-   const previous=new URL(document.referrer);
-   if(previous.origin===location.origin&&previous.pathname!==location.pathname&&history.length>1){event.preventDefault();history.back();}
-  }catch{/* A direct visit returns to the EP through the normal link. */}
- });
+ if(about&&open){
+  open.addEventListener('click',event=>{
+   if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+   event.preventDefault();
+   about.showModal();schedule();document.getElementById('about-back').focus({preventScroll:true});
+  });
+  document.getElementById('about-back').addEventListener('click',()=>about.close());
+  about.addEventListener('close',()=>open.focus({preventScroll:true}));
+ }else{
+  document.getElementById('about-back').addEventListener('click',event=>{
+   if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+   try{
+    const previous=new URL(document.referrer);
+    if(previous.origin===location.origin&&previous.pathname!==location.pathname&&history.length>1){event.preventDefault();history.back();}
+   }catch{/* Direct visits retain the home link. */}
+  });
+ }
 })();
