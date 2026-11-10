@@ -7,7 +7,7 @@ window.PRESAVE_CONFIG=Object.freeze({
  releaseAt:'2026-11-11T00:00:00-03:00',
  releaseLinks:Object.freeze({
   spotify:'',
-  youtube:'',
+  youtube:'https://youtu.be/30dYncV5_Bs?si=QqSE8o5bc42YFjrF',
   youtubeMusic:'',
   deezer:'',
   appleMusic:'',
