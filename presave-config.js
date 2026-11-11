@@ -11,7 +11,7 @@ window.PRESAVE_CONFIG=Object.freeze({
   youtubeMusic:'https://music.youtube.com/playlist?list=OLAK5uy_lPLAkHSi87bE8yi5OKeSOdOrLVFp2Y6Os&si=uH15acNa9tdTCfto',
   tidal:'https://tidal.com/browse/album/573334337',
   appleMusic:'https://music.apple.com/ar/album/meditaci%C3%B3n-guiada-para-perros/6827262220',
-  bandcamp:''
+  bandcamp:'https://0051.bandcamp.com/album/meditaci-n-guiada-para-perros'
  }),
  dogSpeed:28
 });
