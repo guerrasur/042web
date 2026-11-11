@@ -249,13 +249,21 @@ function revealPresave(){
  const presaveButton=document.getElementById('presave');
  presaveButton.inert=false;presaveButton.removeAttribute('aria-hidden');
  menuToggle.classList.add('revealing');
- footerActions.classList.remove('presave-collapsed');
+ footerActions.classList.add('is-revealing');
  menuToggle.setAttribute('aria-label','Abrir menú');
- // Keep the mouth open for the complete reveal, then restore the smile.
- setTimeout(()=>{presaveRevealing=false;menuToggle.classList.remove('revealing');},reducedMotion.matches?0:850);
+ const finish=()=>{presaveRevealing=false;menuToggle.classList.remove('revealing');footerActions.classList.remove('is-revealing');};
+ if(reducedMotion.matches){footerActions.classList.remove('presave-collapsed');finish();return;}
+ // Prepare the two small compositor layers before starting the reveal.
+ requestAnimationFrame(()=>{
+  footerActions.classList.remove('presave-collapsed');
+  setTimeout(finish,650);
+ });
 }
 function sizeMenu(){
- menu.style.setProperty('--menu-height',Math.max(0,footerActions.getBoundingClientRect().top-18)+'px');
+ const rect=footerActions.getBoundingClientRect();
+ // Read dimensions only on resize/menu changes; animation frames use transforms.
+ footerActions.style.setProperty('--reveal-shift',Math.max(0,(rect.width-menuToggle.offsetWidth)/2)+'px');
+ menu.style.setProperty('--menu-height',Math.max(0,rect.top-18)+'px');
 }
 function setMenu(open){
  menuOpen=open;sizeMenu();

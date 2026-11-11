@@ -156,14 +156,17 @@ main.cadavers-open{transform:translateX(100%)}
 #eye-hint.visible{opacity:1}
 #eye-hint.eye-plea{font-style:italic}
 .footer-actions{--menu-size:44px;position:relative;min-height:76px;padding-right:calc(var(--menu-size) + 12px)}
-.footer-actions #menu-toggle{position:absolute;left:calc(100% - var(--menu-size)/2);transform:translateX(-50%);transition:left .8s cubic-bezier(.22,.7,.25,1)}
-.footer-actions.presave-collapsed #menu-toggle{left:50%}
-.footer-actions #presave{opacity:1;visibility:visible;clip-path:inset(0);transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s,background .2s}
-.footer-actions.presave-collapsed #presave{opacity:0;visibility:hidden;clip-path:inset(0 0 0 100%);pointer-events:none;transition:opacity .8s ease,clip-path .8s cubic-bezier(.22,.7,.25,1),visibility 0s .8s}
+.footer-actions #menu-toggle{position:absolute;right:0;left:auto;transform:translate3d(0,0,0);transition:none}
+.footer-actions.presave-collapsed #menu-toggle{transform:translate3d(calc(-1 * var(--reveal-shift,0px)),0,0)}
+.footer-actions.is-revealing #menu-toggle{will-change:transform;transition:transform .6s cubic-bezier(.22,.7,.25,1)}
+.footer-actions #presave{opacity:1;visibility:visible;transform:translate3d(0,0,0);transition:opacity .45s ease .06s,transform .6s cubic-bezier(.22,.7,.25,1),background .2s}
+.footer-actions.presave-collapsed #presave{opacity:0;visibility:hidden;transform:translate3d(24px,0,0);pointer-events:none;transition:none}
+.footer-actions.is-revealing #presave{will-change:transform,opacity}
+.footer-actions #presave:active{transform:scale(.98)}
 #menu-toggle.revealing .menu-closed{display:none}
 #menu-toggle.revealing .menu-open{display:block}
 @media(max-width:380px){.footer-actions{--menu-size:40px;padding-right:calc(var(--menu-size) + 6px)}}
-@media(prefers-reduced-motion:reduce){#song-visibility,#song-panel,.song-collapsed #song-panel,#track-cover,.song-collapsed #track-cover,.footer-actions #menu-toggle,.footer-actions #presave,.footer-actions.presave-collapsed #presave,#eye-hint{transition:none}}
+@media(prefers-reduced-motion:reduce){#song-visibility,#song-panel,.song-collapsed #song-panel,#track-cover,.song-collapsed #track-cover,.footer-actions #menu-toggle,.footer-actions #presave,.footer-actions.presave-collapsed #presave,#eye-hint,.footer-actions.is-revealing #menu-toggle{transition:none}}
 
 /* Live waveform, kept between album metadata and transport controls. */
 #audio-waveform{display:block;width:100%;max-width:280px;height:32px;margin:10px auto 0;pointer-events:none;opacity:.7}
