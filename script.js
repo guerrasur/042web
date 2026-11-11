@@ -256,7 +256,7 @@ function revealPresave(){
  // Prepare the two small compositor layers before starting the reveal.
  requestAnimationFrame(()=>{
   footerActions.classList.remove('presave-collapsed');
-  setTimeout(finish,650);
+  setTimeout(finish,850);
  });
 }
 function sizeMenu(){

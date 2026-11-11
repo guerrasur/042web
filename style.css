@@ -158,8 +158,8 @@ main.cadavers-open{transform:translateX(100%)}
 .footer-actions{--menu-size:44px;position:relative;min-height:76px;padding-right:calc(var(--menu-size) + 12px)}
 .footer-actions #menu-toggle{position:absolute;right:0;left:auto;transform:translate3d(0,0,0);transition:none}
 .footer-actions.presave-collapsed #menu-toggle{transform:translate3d(calc(-1 * var(--reveal-shift,0px)),0,0)}
-.footer-actions.is-revealing #menu-toggle{will-change:transform;transition:transform .6s cubic-bezier(.22,.7,.25,1)}
-.footer-actions #presave{opacity:1;visibility:visible;transform:translate3d(0,0,0);transition:opacity .45s ease .06s,transform .6s cubic-bezier(.22,.7,.25,1),background .2s}
+.footer-actions.is-revealing #menu-toggle{will-change:transform;transition:transform .8s cubic-bezier(.22,.7,.25,1)}
+.footer-actions #presave{opacity:1;visibility:visible;transform:translate3d(0,0,0);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.7,.25,1),background .2s}
 .footer-actions.presave-collapsed #presave{opacity:0;visibility:hidden;transform:translate3d(24px,0,0);pointer-events:none;transition:none}
 .footer-actions.is-revealing #presave{will-change:transform,opacity}
 .footer-actions #presave:active{transform:scale(.98)}
